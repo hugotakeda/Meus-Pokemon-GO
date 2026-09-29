@@ -37,7 +37,6 @@ button.ghost:hover{border-color:var(--ink)}
 .tab{background:none;color:var(--mute);border:0;border-bottom:3px solid transparent;border-radius:0;padding:8px 0;font-size:1.05rem;margin-bottom:-1px}
 .tab.on{color:var(--ink);border-bottom-color:var(--ink);font-weight:700}
 #q{margin:0 0 8px auto;width:170px}
-.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
 .f{background:transparent;color:var(--ink);border:1px solid var(--line);padding:3px 10px;font-size:.85rem;border-radius:4px}
 .f.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
@@ -67,13 +66,9 @@ button.ghost:hover{border-color:var(--ink)}
 .cp:empty,.from:empty,.nt:empty{display:none}
 .acts{order:6;display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:10px}
 .empty{grid-column:1/-1;padding:20px 0;color:var(--mute)}
-select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
-select:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
 #iA,#iD,#iS{width:110px}
-.fbox{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;margin-bottom:14px}
-.fbox label{display:flex;align-items:center;gap:6px;font-size:.9rem;color:var(--mute)}
-.fbox input{width:78px;padding:6px 8px}
 #count{margin:0 0 12px}
+#fbtn{margin-bottom:8px}
 .iv{order:3;padding:0 12px;font-size:.9rem;color:var(--mute)}
 .iv:empty{display:none}
 .tools{margin-top:36px;display:flex;gap:8px;flex-wrap:wrap}
@@ -125,25 +120,8 @@ select:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
   <button class="tab on" data-t="have"></button>
   <button class="tab" data-t="want"></button>
   <input id="q" placeholder="Buscar nome…" aria-label="Buscar">
+  <button class="ghost" id="fbtn">Filtrar / Ordenar</button>
 </div>
-<div class="fbox">
-  <label>CP <input id="cpMin" type="number" min="0" placeholder="mín" aria-label="CP mínimo"><input id="cpMax" type="number" min="0" placeholder="máx" aria-label="CP máximo"></label>
-  <label>IV % <input id="ivMin" type="number" min="0" max="100" placeholder="mín" aria-label="IV mínimo em porcentagem"><input id="ivMax" type="number" min="0" max="100" placeholder="máx" aria-label="IV máximo em porcentagem"></label>
-  <label>Ordenar
-    <select id="sort">
-      <option value="add">Ordem de adição</option>
-      <option value="recent">Mais recentes</option>
-      <option value="cpd">CP: maior primeiro</option>
-      <option value="cpa">CP: menor primeiro</option>
-      <option value="ivd">IV: maior primeiro</option>
-      <option value="iva">IV: menor primeiro</option>
-      <option value="name">Nome (A-Z)</option>
-      <option value="dex">Número da Pokédex</option>
-    </select>
-  </label>
-  <button class="ghost" id="clr">Limpar filtros</button>
-</div>
-<div class="filters" id="filters"></div>
 <p class="hint" id="count" role="status"></p>
 <div class="grid" id="grid"></div>
 
@@ -154,6 +132,14 @@ select:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
 </div>
 </main>
 
+<dialog class="dlg" id="dFil">
+  <h2>Filtrar e ordenar</h2>
+  <p class="hint">Ordenar por</p>
+  <div class="row" id="fSort"></div>
+  <p class="hint">Mostrar apenas</p>
+  <div class="row" id="fTags"></div>
+  <div class="end"><button class="ghost" id="fClr">Limpar</button><button id="fOk">Fechar</button></div>
+</dialog>
 <dialog class="dlg" id="dEdit">
   <h2 id="eTitle"></h2>
   <div class="row" id="eFlags"></div>
@@ -176,7 +162,7 @@ select:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
 const $=id=>document.getElementById(id);
 const ART='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/';
 const FLAGS={hundo:'100%',shiny:'Shiny',shadow:'Rocket',purified:'Purificado',lucky:'Sortudo',mega:'Mega'};
-let dex={},data={have:[],want:[]},tab='have',flt='all';
+let dex={},data={have:[],want:[]},tab='have',flt='all',sortKey='add';
 
 try{const s=JSON.parse(localStorage.getItem('pgo')||'null');if(s)data=s}catch(e){}
 const save=()=>{try{localStorage.setItem('pgo',JSON.stringify(data))}catch(e){}};
@@ -225,15 +211,19 @@ function pic(e){
   return img;
 }
 
-function renderFilters(){
-  const opts={all:'Todos',...FLAGS};
-  $('filters').innerHTML='';
-  Object.entries(opts).forEach(([k,v])=>{
-    const b=document.createElement('button');
-    b.className='f'+(flt===k?' on':'');b.textContent=v;
-    b.onclick=()=>{flt=k;render()};
-    $('filters').append(b);
-  });
+const SORTS=[['add','Ordem de adição'],['recent','Mais recentes'],['cpd','CP: maior primeiro'],['cpa','CP: menor primeiro'],['ivd','IV: maior primeiro'],['iva','IV: menor primeiro'],['name','Nome (A-Z)'],['dex','Número da Pokédex']];
+function drawFil(){
+  const mk=(box,list,cur,set)=>{
+    $(box).innerHTML='';
+    list.forEach(([k,v])=>{
+      const b=document.createElement('button');
+      b.className='f'+(cur()===k?' on':'');b.textContent=v;
+      b.onclick=()=>{set(k);drawFil();render()};
+      $(box).append(b);
+    });
+  };
+  mk('fSort',SORTS,()=>sortKey,k=>sortKey=k);
+  mk('fTags',[['all','Todos'],...Object.entries(FLAGS)],()=>flt,k=>flt=k);
 }
 
 function render(){
@@ -241,25 +231,13 @@ function render(){
     b.classList.toggle('on',b.dataset.t===tab);
     b.textContent=(b.dataset.t==='have'?'Tenho':'Quero pegar')+' ('+data[b.dataset.t].length+')';
   });
-  renderFilters();
+  const act=(flt!=='all')+(sortKey!=='add');
+  $('fbtn').textContent='Filtrar / Ordenar'+(act?' ('+act+')':'');
   const q=$('q').value.trim().toLowerCase();
   const g=$('grid');g.innerHTML='';
-  const n=id=>$(id).value===''?null:+$(id).value;
-  const cMin=n('cpMin'),cMax=n('cpMax'),iMin=n('ivMin'),iMax=n('ivMax');
   const cpOf=e=>e.cp===''||e.cp==null?null:+e.cp;
-  const items=data[tab].filter(e=>{
-    if(q&&!e.name.includes(q))return false;
-    if(flt!=='all'&&!e[flt])return false;
-    const cp=cpOf(e),iv=ivp(e);
-    if((cMin!==null||cMax!==null)&&cp===null)return false;
-    if(cMin!==null&&cp<cMin)return false;
-    if(cMax!==null&&cp>cMax)return false;
-    if((iMin!==null||iMax!==null)&&iv===null)return false;
-    if(iMin!==null&&iv<iMin)return false;
-    if(iMax!==null&&iv>iMax)return false;
-    return true;
-  });
-  const so=$('sort').value,big=1e9;
+  const items=data[tab].filter(e=>(!q||e.name.includes(q))&&(flt==='all'||e[flt]));
+  const so=sortKey,big=1e9;
   const cmp={
     cpd:(a,b)=>(cpOf(b)??-1)-(cpOf(a)??-1),
     cpa:(a,b)=>(cpOf(a)??big)-(cpOf(b)??big),
@@ -368,9 +346,10 @@ $('addHave').onclick=()=>add('have');
 $('addWant').onclick=()=>add('want');
 $('name').addEventListener('keydown',e=>{if(e.key==='Enter')add(tab)});
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
-['q','cpMin','cpMax','ivMin','ivMax'].forEach(i=>$(i).oninput=render);
-$('sort').onchange=render;
-$('clr').onclick=()=>{['q','cpMin','cpMax','ivMin','ivMax'].forEach(i=>$(i).value='');$('sort').value='add';flt='all';render()};
+$('q').oninput=render;
+$('fbtn').onclick=()=>{drawFil();$('dFil').showModal()};
+$('fOk').onclick=()=>$('dFil').close();
+$('fClr').onclick=()=>{flt='all';sortKey='add';drawFil();render()};
 $('exp').onclick=()=>{
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
