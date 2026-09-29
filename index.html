@@ -15,7 +15,6 @@ h1{font-size:1.8rem;line-height:1.1;margin:0 0 20px;font-weight:700;letter-spaci
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 input{font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);min-width:0}
 input:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
-#name{flex:2 1 220px}#cp{width:96px}#note{flex:1 1 150px}
 .chip{cursor:pointer;user-select:none;position:relative}
 .chip input{position:absolute;opacity:0;inset:0;cursor:pointer}
 .chip span{display:inline-block;padding:5px 12px;border-radius:4px;border:1px solid var(--line);font-size:.92rem}
@@ -66,11 +65,23 @@ button.ghost:hover{border-color:var(--ink)}
 .cp:empty,.from:empty,.nt:empty{display:none}
 .acts{order:6;display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:10px}
 .empty{grid-column:1/-1;padding:20px 0;color:var(--mute)}
-#iA,#iD,#iS{width:110px}
 #count{margin:0 0 12px}
 #fbtn{margin-bottom:8px}
 .iv{order:3;padding:0 12px;font-size:.9rem;color:var(--mute)}
 .iv:empty{display:none}
+.fr{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld.grow{flex:1 1 180px}
+.fld.cpf{width:110px}
+.fld input{width:100%}
+.fld>label,.lab,.ivset legend{font-size:.8rem;font-weight:500;color:var(--mute)}
+.ivset{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:0;padding:4px 12px 10px;border:1px solid var(--line);border-radius:6px}
+.ivset legend{padding:0 6px}
+.ivset .fld{width:84px}
+.ivres{min-height:42px;min-width:88px;display:flex;align-items:center;padding-left:4px;font-size:1.2rem;font-weight:700}
+.ivres.dim{font-size:.9rem;font-weight:400;color:var(--mute)}
+.nb{padding-bottom:11px}
+.dlg>.fld,.dlg>.ivset{margin-bottom:12px}
 .tools{margin-top:36px;display:flex;gap:8px;flex-wrap:wrap}
 .dlg{border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);padding:20px;width:min(440px,92vw)}
 .dlg::backdrop{background:#0006}
@@ -89,24 +100,30 @@ button.ghost:hover{border-color:var(--ink)}
 <h1>Meus Pokémon GO</h1>
 
 <div class="form">
-  <div class="row">
-    <input id="name" list="names" placeholder="Nome ou número: pikachu, charizard, 25…" autocomplete="off">
-    <input id="cp" type="number" min="10" placeholder="CP">
-    <input id="note" placeholder="Anotação (opcional)">
+  <div class="fr">
+    <div class="fld grow"><label for="name">Pokémon</label><input id="name" list="names" placeholder="Nome ou número" autocomplete="off"></div>
+    <div class="fld cpf"><label for="cp">CP</label><input id="cp" type="number" min="10" placeholder="2450"></div>
   </div>
-  <div class="row">
-    <input id="iA" type="number" min="0" max="15" placeholder="IV Ataque" aria-label="IV de ataque">
-    <input id="iD" type="number" min="0" max="15" placeholder="IV Defesa" aria-label="IV de defesa">
-    <input id="iS" type="number" min="0" max="15" placeholder="IV PS" aria-label="IV de PS">
-    <span class="hint">Cada IV vai de 0 a 15. Com 15/15/15 a tag 100% é marcada sozinha.</span>
+  <div class="fr">
+    <fieldset class="ivset">
+      <legend>IV</legend>
+      <div class="fld"><label for="iA">Ataque</label><input id="iA" type="number" min="0" max="15" placeholder="0 a 15"></div>
+      <div class="fld"><label for="iD">Defesa</label><input id="iD" type="number" min="0" max="15" placeholder="0 a 15"></div>
+      <div class="fld"><label for="iS">PS</label><input id="iS" type="number" min="0" max="15" placeholder="0 a 15"></div>
+      <output class="ivres dim" id="ivRes" for="iA iD iS">Opcional</output>
+    </fieldset>
+    <div class="fld grow nb"><label for="note">Anotação</label><input id="note" placeholder="Opcional"></div>
   </div>
-  <div class="row">
-    <label class="chip c-hundo"><input type="checkbox" id="hundo"><span>100%</span></label>
-    <label class="chip c-shiny"><input type="checkbox" id="shiny"><span>Shiny</span></label>
-    <label class="chip c-shadow"><input type="checkbox" id="shadow"><span>Sombroso (Rocket)</span></label>
-    <label class="chip c-purified"><input type="checkbox" id="purified"><span>Purificado</span></label>
-    <label class="chip c-lucky"><input type="checkbox" id="lucky"><span>Sortudo</span></label>
-    <label class="chip c-mega"><input type="checkbox" id="mega"><span>Mega</span></label>
+  <div class="fld">
+    <span class="lab">Variantes</span>
+    <div class="row">
+      <label class="chip c-hundo"><input type="checkbox" id="hundo"><span>100%</span></label>
+      <label class="chip c-shiny"><input type="checkbox" id="shiny"><span>Shiny</span></label>
+      <label class="chip c-shadow"><input type="checkbox" id="shadow"><span>Sombroso (Rocket)</span></label>
+      <label class="chip c-purified"><input type="checkbox" id="purified"><span>Purificado</span></label>
+      <label class="chip c-lucky"><input type="checkbox" id="lucky"><span>Sortudo</span></label>
+      <label class="chip c-mega"><input type="checkbox" id="mega"><span>Mega</span></label>
+    </div>
   </div>
   <div class="row">
     <button id="addHave">Adicionar em “Tenho”</button>
@@ -142,9 +159,17 @@ button.ghost:hover{border-color:var(--ink)}
 </dialog>
 <dialog class="dlg" id="dEdit">
   <h2 id="eTitle"></h2>
+  <span class="lab">Variantes</span>
   <div class="row" id="eFlags"></div>
-  <div class="row"><input id="eCp" type="number" min="10" placeholder="CP"><input id="eNote" placeholder="Anotação"></div>
-  <div class="row"><input id="eA" type="number" min="0" max="15" placeholder="IV Ataque" aria-label="IV de ataque"><input id="eD" type="number" min="0" max="15" placeholder="IV Defesa" aria-label="IV de defesa"><input id="eS" type="number" min="0" max="15" placeholder="IV PS" aria-label="IV de PS"></div>
+  <div class="fld"><label for="eCp">CP</label><input id="eCp" type="number" min="10"></div>
+  <div class="fld"><label for="eNote">Anotação</label><input id="eNote"></div>
+  <fieldset class="ivset">
+    <legend>IV</legend>
+    <div class="fld"><label for="eA">Ataque</label><input id="eA" type="number" min="0" max="15" placeholder="0 a 15"></div>
+    <div class="fld"><label for="eD">Defesa</label><input id="eD" type="number" min="0" max="15" placeholder="0 a 15"></div>
+    <div class="fld"><label for="eS">PS</label><input id="eS" type="number" min="0" max="15" placeholder="0 a 15"></div>
+    <output class="ivres dim" id="eRes" for="eA eD eS">Opcional</output>
+  </fieldset>
   <div id="eMsg" class="hint" style="color:#b3261e;min-height:1.2em" role="status"></div>
   <div class="end"><button class="ghost" id="eCancel">Cancelar</button><button id="eSave">Salvar</button></div>
 </dialog>
@@ -199,6 +224,7 @@ function add(list){
   if(iv&&iv.every(x=>x===15))e.hundo=true;
   data[list].push(e);save();
   ['name','cp','note','iA','iD','iS'].forEach(i=>$(i).value='');
+  showIV('iA','iD','iS','ivRes');
   tab=list;render();
 }
 
@@ -259,7 +285,7 @@ function render(){
     const id=document.createElement('span');id.className='id';id.textContent='#'+e.id;nm.append(id);
     c.querySelector('.nt').textContent=e.note||'';
     c.querySelector('.from').textContent=e.evolvedFrom?'Evoluiu de '+e.evolvedFrom:'';
-    c.querySelector('.iv').textContent=e.iv?'IV '+ivp(e)+'% ('+e.iv.join('/')+')':'';
+    c.querySelector('.iv').textContent=e.iv?'IV '+String(ivp(e)).replace('.',',')+'% ('+e.iv.join('/')+')':'';
     const a=c.querySelector('.acts');
     const mk=(t,fn)=>{const b=document.createElement('button');b.className='ghost';b.textContent=t;b.onclick=fn;a.append(b)};
     if(tab==='want')mk('Peguei!',()=>{data.want=data.want.filter(x=>x.uid!==e.uid);data.have.push(e);save();render()});
@@ -276,6 +302,18 @@ function render(){
 }
 
 const ivp=e=>e.iv?Math.round(e.iv.reduce((a,b)=>a+b,0)/45*1000)/10:null;
+function showIV(a,b,c,out){
+  const v=[a,b,c].map(i=>$(i).value),el=$(out);
+  let t='Opcional',dim=true;
+  if(v.some(x=>x!=='')){
+    if(v.some(x=>x===''||isNaN(x)))t='Faltam valores';
+    else{
+      const sum=v.reduce((n,x)=>n+Math.min(15,Math.max(0,+x)),0);
+      t=(Math.round(sum/45*1000)/10).toLocaleString('pt-BR')+'%';dim=false;
+    }
+  }
+  el.textContent=t;el.classList.toggle('dim',dim);
+}
 function readIV(a,b,c){
   const v=[a,b,c].map(i=>$(i).value);
   if(v.every(x=>x===''))return null;
@@ -307,6 +345,7 @@ function openEdit(e){
   });
   $('eCp').value=e.cp||'';$('eNote').value=e.note||'';
   ['eA','eD','eS'].forEach((id,i)=>$(id).value=e.iv?e.iv[i]:'');$('eMsg').textContent='';
+  showIV('eA','eD','eS','eRes');
   $('dEdit').showModal();
 }
 $('eSave').onclick=()=>{
@@ -347,6 +386,14 @@ $('addWant').onclick=()=>add('want');
 $('name').addEventListener('keydown',e=>{if(e.key==='Enter')add(tab)});
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
 $('q').oninput=render;
+['iA','iD','iS'].forEach(i=>$(i).oninput=()=>{
+  showIV('iA','iD','iS','ivRes');
+  if(['iA','iD','iS'].every(x=>$(x).value==='15'))$('hundo').checked=true;
+});
+['eA','eD','eS'].forEach(i=>$(i).oninput=()=>{
+  showIV('eA','eD','eS','eRes');
+  if(['eA','eD','eS'].every(x=>$(x).value==='15'))document.querySelector('#eFlags input[data-f=hundo]').checked=true;
+});
 $('fbtn').onclick=()=>{drawFil();$('dFil').showModal()};
 $('fOk').onclick=()=>$('dFil').close();
 $('fClr').onclick=()=>{flt='all';sortKey='add';drawFil();render()};
