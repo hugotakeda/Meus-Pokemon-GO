@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meus Pokémon GO</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#ee4b4b;--gold:#ffc83d;--rocket:#7a3cb3;--blue:#4a90f0;--ink:#1a2050;--glass:#ffffff1c;--line:#ffffff38}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:#fff;font:16px/1.4 Fredoka,system-ui,sans-serif;padding:24px 16px 70px;
+background:radial-gradient(900px 500px at 85% -10%,#3fc8b455,transparent),radial-gradient(700px 500px at -10% 20%,#7a3cb355,transparent),linear-gradient(160deg,#1a2050,#0f3550 70%,#0d4a4a) fixed}
+main{max-width:1040px;margin:auto}
+header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.ball{width:52px;height:52px;border-radius:50%;background:linear-gradient(#ee4b4b 46%,#1a2050 46% 54%,#fff 54%);border:4px solid #1a2050;position:relative;box-shadow:0 0 0 3px #fff,0 8px 20px #0006;flex:none}
+.ball::after{content:"";position:absolute;inset:50% auto auto 50%;width:16px;height:16px;margin:-8px;background:#fff;border:4px solid #1a2050;border-radius:50%}
+h1{font-size:2.1rem;margin:0;line-height:1;font-weight:700}
+.sub{margin:4px 0 0;opacity:.75;font-size:.95rem}
+.form{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(10px);border-radius:22px;padding:16px;display:grid;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+input{font:inherit;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#0b1636aa;color:#fff;min-width:0}
+input::placeholder{color:#fff8}
+#name{flex:2 1 220px}#cp{width:96px}#note{flex:1 1 150px}
+.chip{cursor:pointer;user-select:none;position:relative}
+.chip input{position:absolute;opacity:0;inset:0}
+.chip span{display:inline-block;padding:7px 14px;border-radius:99px;border:1px solid var(--line);font-size:.92rem;background:#ffffff10;transition:.15s}
+.chip input:checked+span{border-color:transparent;color:#fff;font-weight:500}
+.chip input:focus-visible+span{outline:3px solid var(--blue)}
+.c-hundo input:checked+span{background:linear-gradient(135deg,#ffc83d,#ff8a2b);color:#3a2000;box-shadow:0 0 14px #ffc83d99}
+.c-shiny input:checked+span{background:#e8b923;color:#3a2b00}
+.c-shadow input:checked+span{background:var(--rocket)}
+.c-purified input:checked+span{background:var(--blue)}
+.c-lucky input:checked+span{background:#c98a10}
+.c-mega input:checked+span{background:var(--red)}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:10px 18px;background:var(--red);color:#fff;font-weight:500;box-shadow:0 4px 0 #a82a2a;transition:transform .1s}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 #a82a2a}
+button.alt{background:var(--rocket);box-shadow:0 4px 0 #4a2270}
+button.ghost{background:#ffffff18;box-shadow:none;border:1px solid var(--line);padding:6px 12px;font-size:.85rem}
+button:focus-visible{outline:3px solid var(--blue)}
+#msg{font-size:.9rem;color:#ffb3b3}
+.bar{display:flex;gap:8px;margin:26px 0 10px;flex-wrap:wrap;align-items:center}
+.tab{background:#ffffff14;box-shadow:none;border:1px solid var(--line);font-size:1.05rem}
+.tab.on{background:#fff;color:var(--ink);border-color:#fff;font-weight:700}
+#q{margin-left:auto;width:170px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.f{background:transparent;box-shadow:none;border:1px solid var(--line);padding:4px 12px;font-size:.85rem;border-radius:99px;opacity:.8}
+.f.on{background:#ffffff30;opacity:1;border-color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px}
+.card{position:relative;background:linear-gradient(180deg,#ffffff,#e6efff);color:var(--ink);border-radius:22px;padding:12px 12px 14px;text-align:center;display:flex;flex-direction:column;gap:4px;box-shadow:0 10px 24px #0005}
+.card.hundo{box-shadow:0 0 0 3px var(--gold),0 0 26px #ffc83daa,0 10px 24px #0005}
+.card.shadow{background:linear-gradient(180deg,#f0e4ff,#d3bdf0)}
+.card.lucky{background:linear-gradient(180deg,#fff6d0,#f6dc8a)}
+.card.purified{background:linear-gradient(180deg,#e4f2ff,#b8d9fb)}
+.cp{font-size:.8rem;font-weight:500;opacity:.7;min-height:1.1em}
+.cp b{font-size:1.5rem;font-weight:700;opacity:1;margin-left:2px}
+.pic{height:140px;display:grid;place-items:center;position:relative;margin:2px 0}
+.pic::before{content:"";position:absolute;width:132px;height:132px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#bfe3d8 55%,#7fc4b3);opacity:.9}
+.card.shadow .pic::before{background:radial-gradient(circle at 35% 30%,#b26cff,#4a1f78 70%)}
+.card.purified .pic::before{background:radial-gradient(circle at 35% 30%,#fff,#8fbdf5)}
+.card.lucky .pic::before{background:radial-gradient(circle at 35% 30%,#fff,#ffd75e 70%)}
+.pic img{position:relative;max-width:125px;max-height:125px;filter:drop-shadow(0 6px 5px #0004)}
+.card.shadow .pic img{filter:drop-shadow(0 0 10px #b26cff) saturate(.6) brightness(.8) sepia(.6) hue-rotate(230deg)}
+.badges{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.b{font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:99px;color:#fff}
+.b.hundo{background:linear-gradient(135deg,#ffc83d,#ff8a2b);color:#3a2000}
+.b.shiny{background:#e8b923;color:#3a2b00}
+.b.shadow{background:var(--rocket)}
+.b.purified{background:var(--blue)}
+.b.lucky{background:#c98a10}
+.b.mega{background:var(--red)}
+.nm{font-weight:700;font-size:1.1rem;text-transform:capitalize}
+.id{font-weight:400;opacity:.55;font-size:.85rem}
+.nt{font-size:.82rem;opacity:.75;overflow-wrap:anywhere}
+.acts{display:flex;gap:6px;justify-content:center;margin-top:8px}
+.card .ghost{background:#1a205010;color:var(--ink);border-color:#1a205030}
+.empty{grid-column:1/-1;text-align:center;padding:40px;opacity:.75;border:2px dashed var(--line);border-radius:22px}
+.tools{margin-top:34px;display:flex;gap:8px;flex-wrap:wrap}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="ball" aria-hidden="true"></div>
+  <div><h1>Meus Pokémon GO</h1><p class="sub">Digite o nome (em inglês) ou o número da Pokédex e marque as variantes.</p></div>
+</header>
+
+<div class="form">
+  <div class="row">
+    <input id="name" list="names" placeholder="Nome ou número: pikachu, charizard, 25…" autocomplete="off">
+    <input id="cp" type="number" min="10" placeholder="CP">
+    <input id="note" placeholder="Anotação (opcional)">
+  </div>
+  <div class="row">
+    <label class="chip c-hundo"><input type="checkbox" id="hundo"><span>100%</span></label>
+    <label class="chip c-shiny"><input type="checkbox" id="shiny"><span>Shiny</span></label>
+    <label class="chip c-shadow"><input type="checkbox" id="shadow"><span>Sombroso (Rocket)</span></label>
+    <label class="chip c-purified"><input type="checkbox" id="purified"><span>Purificado</span></label>
+    <label class="chip c-lucky"><input type="checkbox" id="lucky"><span>Sortudo</span></label>
+    <label class="chip c-mega"><input type="checkbox" id="mega"><span>Mega</span></label>
+  </div>
+  <div class="row">
+    <button id="addHave">Adicionar em “Tenho”</button>
+    <button id="addWant" class="alt">Adicionar em “Quero pegar”</button>
+    <span id="msg" role="status"></span>
+  </div>
+</div>
+<datalist id="names"></datalist>
+
+<div class="bar">
+  <button class="tab on" data-t="have"></button>
+  <button class="tab" data-t="want"></button>
+  <input id="q" placeholder="Buscar nome…" aria-label="Buscar">
+</div>
+<div class="filters" id="filters"></div>
+<div class="grid" id="grid"></div>
+
+<div class="tools">
+  <button class="ghost" id="exp">Exportar backup</button>
+  <button class="ghost" id="imp">Importar backup</button>
+  <input type="file" id="file" accept=".json" hidden>
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const ART='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/';
+const FLAGS={hundo:'100%',shiny:'Shiny',shadow:'Rocket',purified:'Purificado',lucky:'Sortudo',mega:'Mega'};
+let dex={},data={have:[],want:[]},tab='have',flt='all';
+
+try{const s=JSON.parse(localStorage.getItem('pgo')||'null');if(s)data=s}catch(e){}
+const save=()=>{try{localStorage.setItem('pgo',JSON.stringify(data))}catch(e){}};
+
+async function loadDex(){
+  try{const c=JSON.parse(localStorage.getItem('pgo-dex')||'null');if(c)dex=c}catch(e){}
+  if(!Object.keys(dex).length){
+    try{
+      const j=await (await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025')).json();
+      j.results.forEach(p=>dex[p.name]=+p.url.split('/').filter(Boolean).pop());
+      try{localStorage.setItem('pgo-dex',JSON.stringify(dex))}catch(e){}
+    }catch(e){$('msg').textContent='Sem internet para carregar os nomes. Você ainda pode usar o número da Pokédex.'}
+  }
+  $('names').innerHTML=Object.keys(dex).map(n=>`<option value="${n}">`).join('');
+}
+
+function resolve(txt){
+  const t=txt.trim().toLowerCase().replace(/\s+/g,'-');
+  if(/^\d+$/.test(t)){
+    const id=+t;
+    return id>0&&id<=1025?{id,name:Object.keys(dex).find(k=>dex[k]===id)||('#'+id)}:null;
+  }
+  return dex[t]?{id:dex[t],name:t}:null;
+}
+
+function add(list){
+  const p=resolve($('name').value);
+  if(!p){$('msg').textContent='Não encontrei esse Pokémon. Use o nome em inglês ou o número da Pokédex.';return}
+  $('msg').textContent='';
+  const e={uid:Date.now()+Math.random(),id:p.id,name:p.name,cp:$('cp').value,note:$('note').value.trim()};
+  Object.keys(FLAGS).forEach(f=>e[f]=$(f).checked);
+  data[list].push(e);save();
+  ['name','cp','note'].forEach(i=>$(i).value='');
+  tab=list;render();
+}
+
+function pic(e){
+  const img=document.createElement('img');
+  img.alt=e.name;img.loading='lazy';
+  const normal=ART+e.id+'.png';
+  img.src=e.shiny?ART+'shiny/'+e.id+'.png':normal;
+  img.onerror=()=>{if(img.src!==normal)img.src=normal;else img.replaceWith(document.createTextNode('?'))};
+  return img;
+}
+
+function renderFilters(){
+  const opts={all:'Todos',...FLAGS};
+  $('filters').innerHTML='';
+  Object.entries(opts).forEach(([k,v])=>{
+    const b=document.createElement('button');
+    b.className='f'+(flt===k?' on':'');b.textContent=v;
+    b.onclick=()=>{flt=k;render()};
+    $('filters').append(b);
+  });
+}
+
+function render(){
+  document.querySelectorAll('.tab').forEach(b=>{
+    b.classList.toggle('on',b.dataset.t===tab);
+    b.textContent=(b.dataset.t==='have'?'Tenho':'Quero pegar')+' ('+data[b.dataset.t].length+')';
+  });
+  renderFilters();
+  const q=$('q').value.trim().toLowerCase();
+  const g=$('grid');g.innerHTML='';
+  const items=data[tab].filter(e=>(!q||e.name.includes(q))&&(flt==='all'||e[flt]));
+  if(!items.length){g.innerHTML='<div class="empty">Nada por aqui ainda. Adicione um Pokémon no formulário acima.</div>';return}
+  items.forEach(e=>{
+    const on=Object.keys(FLAGS).filter(f=>e[f]);
+    const c=document.createElement('div');
+    c.className='card '+on.join(' ');
+    c.innerHTML=`<div class="cp">${e.cp?'CP <b>'+(+e.cp|0)+'</b>':''}</div><div class="pic"></div><div class="badges">${on.map(f=>`<span class="b ${f}">${FLAGS[f]}</span>`).join('')}</div><div class="nm"></div><div class="nt"></div><div class="acts"></div>`;
+    c.querySelector('.pic').append(pic(e));
+    const nm=c.querySelector('.nm');nm.textContent=e.name+' ';
+    const id=document.createElement('span');id.className='id';id.textContent='#'+e.id;nm.append(id);
+    c.querySelector('.nt').textContent=e.note||'';
+    const a=c.querySelector('.acts');
+    if(tab==='want'){
+      const b=document.createElement('button');b.className='ghost';b.textContent='Peguei!';
+      b.onclick=()=>{data.want=data.want.filter(x=>x.uid!==e.uid);data.have.push(e);save();render()};
+      a.append(b);
+    }
+    const d=document.createElement('button');d.className='ghost';d.textContent='Remover';
+    d.onclick=()=>{data[tab]=data[tab].filter(x=>x.uid!==e.uid);save();render()};
+    a.append(d);g.append(c);
+  });
+}
+
+$('addHave').onclick=()=>add('have');
+$('addWant').onclick=()=>add('want');
+$('name').addEventListener('keydown',e=>{if(e.key==='Enter')add(tab)});
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
+$('q').oninput=render;
+$('exp').onclick=()=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download='meus-pokemon-go.json';a.click();
+};
+$('imp').onclick=()=>$('file').click();
+$('file').onchange=async ev=>{
+  try{const j=JSON.parse(await ev.target.files[0].text());
+    if(Array.isArray(j.have)&&Array.isArray(j.want)){data=j;save();render()}
+  }catch(e){$('msg').textContent='Arquivo de backup inválido.'}
+};
+loadDex();render();
+</script>
+</body>
+</html>
