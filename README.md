@@ -6,7 +6,7 @@ Não precisa instalar nada, nem ter servidor ou conta. É só abrir o arquivo no
 
 ## Como usar
 
-1. Baixe o arquivo `pokemon-go.html`.
+1. Baixe o arquivo `index.html`.
 2. Abra no navegador (Chrome, Edge, Firefox, Safari), no PC ou no celular.
 3. Use sempre o mesmo navegador, porque é nele que seus dados ficam salvos (veja [Onde os dados ficam](#onde-os-dados-ficam)).
 
