@@ -15,7 +15,7 @@ Não precisa instalar nada, nem ter servidor ou conta. É só abrir o arquivo no
 **Adicionar Pokémon**
 - Digite o nome em inglês (com sugestões automáticas) ou o número da Pokédex, de 1 a 1025.
 - Marque as variantes: 100%, Shiny, Sombroso (Rocket), Purificado, Sortudo e Mega. Dá para combinar, como shiny sombroso.
-- Informe o CP, os IVs (ataque, defesa e PS, de 0 a 15) e uma anotação, se quiser. Com 15/15/15 a tag 100% é marcada sozinha, e o card mostra a porcentagem de IV.
+- Informe o CP, os IVs (ataque, defesa e PS, de 0 a 15) e uma anotação, se quiser. Marcar a tag 100% preenche os IVs com 15/15/15, e digitar 15/15/15 marca a tag 100%. O card mostra a porcentagem de IV.
 - Adicione em **Tenho** ou em **Quero pegar**.
 
 **Nível calculado**
