@@ -15,8 +15,16 @@ Não precisa instalar nada, nem ter servidor ou conta. É só abrir o arquivo no
 **Adicionar Pokémon**
 - Digite o nome em inglês (com sugestões automáticas) ou o número da Pokédex, de 1 a 1025.
 - Marque as variantes: 100%, Shiny, Sombroso (Rocket), Purificado, Sortudo e Mega. Dá para combinar, como shiny sombroso.
-- Informe o CP e uma anotação, se quiser.
+- Informe o CP, os IVs (ataque, defesa e PS, de 0 a 15) e uma anotação, se quiser. Com 15/15/15 a tag 100% é marcada sozinha, e o card mostra a porcentagem de IV.
 - Adicione em **Tenho** ou em **Quero pegar**.
+
+**Nível calculado**
+- Com o Pokémon, o CP e os três IVs preenchidos, o site calcula o nível e mostra ao lado do CP, no formulário, na janela de Editar e no card.
+- A conta é a do jogo: `CP = piso((Ataque + IV) x raiz(Defesa + IV) x raiz(PS + IV) x multiplicador² / 10)`, com mínimo de 10. O site testa os níveis de 1 a 51 (de meio em meio) e mostra o que resulta no CP informado.
+- Os atributos base e os multiplicadores de CP vêm do Game Master do Pokémon GO (repositório PokeMiners/game_masters) e estão embutidos no arquivo, então o cálculo não depende de internet. Os meios níveis usam a regra do jogo, a raiz da média dos quadrados dos multiplicadores vizinhos.
+- Se um Pokémon novo ainda não estiver na tabela embutida, o site converte os atributos a partir da PokéAPI, o que pode deixar o nível aproximado.
+- Se mais de um nível der o mesmo CP, aparece a faixa (por exemplo "3 a 3,5"). Se o CP só chega perto, aparece com "~". Se o CP não bate com o IV, o campo mostra "Não confere" e o card não exibe nível.
+- Não calcula para Pokémon Mega. Formas regionais e alternativas usam os atributos da forma padrão, então o nível pode aparecer aproximado ou não aparecer.
 
 **Imagens**
 - O Pokémon shiny usa a arte shiny oficial.
@@ -28,10 +36,16 @@ Não precisa instalar nada, nem ter servidor ou conta. É só abrir o arquivo no
 - **Editar**: altera as tags (adicionar ou remover shiny, 100% etc.), o CP e a anotação.
 - **Remover**: apaga o Pokémon da lista.
 
-**Organização**
-- Busca por nome.
-- Filtros por tag: Todos, 100%, Shiny, Rocket, Purificado, Sortudo e Mega.
-- Exportar e importar backup em arquivo `.json`.
+**Filtrar e ordenar**
+- O botão "Filtrar / Ordenar" abre uma janela com as opções. O número entre parênteses mostra quantas estão ativas.
+- Ordenação por adição, mais recentes, CP, IV, nome ou número da Pokédex.
+- Mostrar apenas uma tag: 100%, Shiny, Rocket, Purificado, Sortudo ou Mega.
+- Pokémon sem CP ou sem IV cadastrado ficam por último ao ordenar por esse valor.
+- Há também uma busca por nome ao lado do botão.
+- "Limpar" volta tudo ao padrão.
+
+**Backup**
+- Exportar e importar em arquivo `.json`.
 
 ## Onde os dados ficam
 
@@ -50,6 +64,7 @@ Chaves usadas no `localStorage`:
 | `pgo` | Suas listas (Tenho e Quero pegar) |
 | `pgo-dex` | Cache da lista de nomes e números dos Pokémon |
 | `pgo-evo` | Cache das evoluções de cada Pokémon |
+| `pgo-stats` | Cache dos atributos base de Pokémon que não estão na tabela embutida |
 
 ## Requisitos
 
@@ -64,15 +79,19 @@ A lista de nomes e as evoluções ficam em cache depois da primeira consulta. As
 
 - Os nomes seguem a PokéAPI, em inglês (por exemplo `charizard`). Se o nome em português não for encontrado, use o número da Pokédex.
 - Só há suporte aos Pokémon de 1 a 1025. Formas regionais e alternativas usam a imagem da forma padrão.
-- O site não pode ser publicado como página hospedada no claude.ai, porque essas páginas bloqueiam imagens e requisições externas. Use o arquivo localmente.
+- O site não funciona como página hospedada no claude.ai, porque essas páginas bloqueiam imagens e requisições externas. Localmente ou em hospedagens comuns, como Vercel, Netlify e GitHub Pages, funciona normalmente.
+
+## Publicar na Vercel
+
+Envie a pasta com o `index.html` na raiz. O arquivo precisa ter esse nome, senão a Vercel mostra 404 na página inicial. Não precisa de build nem de configuração.
 
 ## Estrutura
 
 Tudo está em um único arquivo:
 
 ```
-pokemon-go.html   HTML, CSS e JavaScript, sem dependências
-README.md         este arquivo
+index.html   HTML, CSS e JavaScript, sem dependências
+README.md    este arquivo
 ```
 
 ## Personalização
