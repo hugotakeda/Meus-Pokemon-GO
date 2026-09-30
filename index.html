@@ -190,6 +190,8 @@ const FLAGS={hundo:'100%',shiny:'Shiny',shadow:'Rocket',purified:'Purificado',lu
 let dex={},data={have:[],want:[]},tab='have',flt='all',sortKey='add';
 
 try{const s=JSON.parse(localStorage.getItem('pgo')||'null');if(s)data=s}catch(e){}
+const fixHundo=()=>[...(data.have||[]),...(data.want||[])].forEach(e=>{if(e.hundo&&!e.iv)e.iv=[15,15,15]});
+fixHundo();
 const save=()=>{try{localStorage.setItem('pgo',JSON.stringify(data))}catch(e){}};
 
 async function loadDex(){
@@ -222,6 +224,7 @@ function add(list){
   const e={uid:Date.now()+Math.random(),id:p.id,name:p.name,cp:$('cp').value,note:$('note').value.trim(),iv};
   Object.keys(FLAGS).forEach(f=>e[f]=$(f).checked);
   if(iv&&iv.every(x=>x===15))e.hundo=true;
+  if(e.hundo&&!e.iv)e.iv=[15,15,15];
   data[list].push(e);save();
   ['name','cp','note','iA','iD','iS'].forEach(i=>$(i).value='');
   showIV('iA','iD','iS','ivRes');
@@ -417,6 +420,7 @@ $('eSave').onclick=()=>{
   cur.iv=iv;
   document.querySelectorAll('#eFlags input').forEach(i=>cur[i.dataset.f]=i.checked);
   if(iv&&iv.every(x=>x===15))cur.hundo=true;
+  if(cur.hundo&&!cur.iv)cur.iv=[15,15,15];
   cur.cp=$('eCp').value;cur.note=$('eNote').value.trim();
   save();$('dEdit').close();render();
 };
@@ -454,16 +458,25 @@ $('mega').addEventListener('change',upd);
 const eMega=()=>document.querySelector('#eFlags input[data-f=mega]').checked;
 const eUpd=()=>updateLv('eLv',cur&&cur.id,'eCp',['eA','eD','eS'],eMega());
 ['eCp','eA','eD','eS'].forEach(i=>$(i).addEventListener('input',eUpd));
-$('eFlags').addEventListener('change',eUpd);
+$('eFlags').addEventListener('change',ev=>{
+  if(ev.target.dataset.f==='hundo'){setHundoIV(eIV,ev.target.checked);showIV(...eIV,'eRes')}
+  eUpd();
+});
 $('q').oninput=render;
-['iA','iD','iS'].forEach(i=>$(i).oninput=()=>{
-  showIV('iA','iD','iS','ivRes');
-  if(['iA','iD','iS'].every(x=>$(x).value==='15'))$('hundo').checked=true;
-});
-['eA','eD','eS'].forEach(i=>$(i).oninput=()=>{
-  showIV('eA','eD','eS','eRes');
-  if(['eA','eD','eS'].every(x=>$(x).value==='15'))document.querySelector('#eFlags input[data-f=hundo]').checked=true;
-});
+function syncHundo(ids,chip){
+  const v=ids.map(i=>$(i).value);
+  if(v.every(x=>x==='15'))chip().checked=true;
+  else if(v.some(x=>x!==''&&x!=='15'))chip().checked=false;
+}
+function setHundoIV(ids,on){
+  if(on)ids.forEach(i=>$(i).value=15);
+  else if(ids.every(i=>$(i).value==='15'))ids.forEach(i=>$(i).value='');
+}
+const mIV=['iA','iD','iS'],eIV=['eA','eD','eS'];
+const eChip=()=>document.querySelector('#eFlags input[data-f=hundo]');
+mIV.forEach(i=>$(i).oninput=()=>{showIV(...mIV,'ivRes');syncHundo(mIV,()=>$('hundo'))});
+$('hundo').addEventListener('change',()=>{setHundoIV(mIV,$('hundo').checked);showIV(...mIV,'ivRes');upd()});
+eIV.forEach(i=>$(i).oninput=()=>{showIV(...eIV,'eRes');syncHundo(eIV,eChip)});
 $('fbtn').onclick=()=>{drawFil();$('dFil').showModal()};
 $('fOk').onclick=()=>$('dFil').close();
 $('fClr').onclick=()=>{flt='all';sortKey='add';drawFil();render()};
@@ -475,7 +488,7 @@ $('exp').onclick=()=>{
 $('imp').onclick=()=>$('file').click();
 $('file').onchange=async ev=>{
   try{const j=JSON.parse(await ev.target.files[0].text());
-    if(Array.isArray(j.have)&&Array.isArray(j.want)){data=j;save();render()}
+    if(Array.isArray(j.have)&&Array.isArray(j.want)){data=j;fixHundo();save();render()}
   }catch(e){$('msg').textContent='Arquivo de backup inválido.'}
 };
 loadDex();render();
