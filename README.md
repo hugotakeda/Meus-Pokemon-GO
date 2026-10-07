@@ -46,12 +46,43 @@ Os nomes, títulos e textos das tarefas preservam o conteúdo original da fonte,
 
 **Disponibilidade de shiny não significa uma chance aumentada.** O feed não fornece probabilidades verificáveis e o site não atribui taxas aos Pokémon. A calculadora permite informar uma taxa estimada por conta própria e calcula `1 - (1 - 1/taxa)^encontros`, assumindo encontros independentes com probabilidade constante. A raridade dos ovos é a classificação da fonte, não uma porcentagem de eclosão.
 
-## Eventos, novidades e lembretes
+## Calendário mensal
 
-- Consulte eventos em andamento, próximos e todos os eventos da fonte, com links para os detalhes.
-- Datas sem horário confirmado aparecem como não informadas; o site não inventa datas ou rotações.
-- Horários locais do jogo seguem o fuso do dispositivo. Horários globais fornecidos em UTC são convertidos para esse mesmo fuso, conforme o [contrato da fonte](https://github.com/bigfoott/ScrapedDuck/wiki/Events).
+A agenda reúne duas formas de consultar o mês, mantendo o fundo claro e os destaques verdes do site:
+
+- **Resumo do mês:** um resumo em estilo de infográfico, com Pokémon, períodos, horários e bônus disponíveis na fonte. Permite comparar as rotações e os destaques do mês.
+- **Calendário:** uma grade mensal que distribui os eventos pelos dias. Selecione um dia para consultar sua programação. Eventos que atravessam vários dias continuam sendo o mesmo evento; salvá-los em dias diferentes não cria vários lembretes.
+
+Use mês anterior, mês seguinte e **Hoje** para navegar. Busque por Pokémon ou evento, filtre pelo **Tipo** e ative **Só os meus salvos** para rever os lembretes. Abra um cartão para consultar seus detalhes, fonte, lembrete e exportação para calendário. As imagens de Pokémon priorizam os sprites fornecidos por Leek Duck. Quando uma espécie aparece explicitamente no título e pode ser identificada na Pokédex, a agenda pode usar a arte da espécie da PokéAPI; o diálogo informa que essa imagem é ilustrativa e não confirma a forma ou a disponibilidade shiny. Um título ou banner genérico não é tratado como confirmação de uma espécie: quando a fonte não informa Pokémon ou bônus, a agenda apresenta essa ausência.
+
+O calendário usa [Leek Duck](https://leekduck.com/events/), via o feed público de eventos do [ScrapedDuck](https://github.com/bigfoott/ScrapedDuck). É uma visão dos dados disponíveis na consulta, **não um arquivo histórico completo**. Meses anteriores podem ter eventos ausentes, e meses futuros podem estar parcialmente anunciados. Um dia sem registros significa apenas que não há eventos informados no conjunto carregado. O cache local não reconstrói anúncios antigos nem mantém um histórico permanente.
+
+### Disponibilidade no Brasil
+
+A agenda e os próximos eventos da visão geral mostram a programação recorrente global válida no Brasil e eventos brasileiros verificados. Edições presenciais estrangeiras e eventos genéricos sem confirmação ficam ocultos. Como o feed não contém localização estruturada, `brazil-event-scope.js` combina categorias globais recorrentes com um registro editorial de exceções, vinculado ao ID, tipo e intervalo exatos. Alterações nas datas de uma exceção exigem nova conferência; **Atualizar dados** não faz essa revisão editorial. Novos eventos genéricos precisam ser classificados nesse arquivo para aparecer.
+
+Os detalhes exibem abrangência, condições, fonte e data da conferência quando houver revisão editorial. Por exemplo, a promoção TCG em lojas dos EUA fica excluída; o Dia Max de 24/10/2026 mostra Azelf para o Brasil; a pesquisa adidas indica as lojas brasileiras participantes. O término dos Twitch Drops ainda não confirmado é omitido e não pode gerar um lembrete com horário inventado. Eventos com datas parcialmente conhecidas ficam em uma lista de horários a confirmar no mês correspondente.
+
+Datas sem horário confirmado aparecem como não informadas; o site não inventa datas ou rotações. Horários locais do jogo seguem o fuso do dispositivo. Horários globais fornecidos em UTC são convertidos para esse mesmo fuso, conforme o [contrato da fonte](https://github.com/bigfoott/ScrapedDuck/wiki/Events). Um evento pode, portanto, aparecer em outro dia ao mudar o fuso do dispositivo. Para viajar ou jogar em outra região, confira o horário indicado pela fonte.
+
+### Bônus semanais e recompensa de pesquisa da temporada
+
+Alguns detalhes da temporada não estão presentes no JSON do ScrapedDuck. O projeto inclui um suplemento editorial revisado em `companion-data.js` para os bônus semanais **Daily Discoveries** e os possíveis encontros da **Research Breakthrough**. Essa lista de encontros é a recompensa de descoberta extraordinária da temporada; não é a lista de tarefas de pesquisa de campo do guia.
+
+O suplemento atual só é anexado ao evento `season-24-twilight-trails` quando seu início e fim locais correspondem exatamente a **8 de setembro de 2026, às 10h**, e **1º de dezembro de 2026, às 10h**. Não é aplicado automaticamente a outra temporada, a meses fora desse intervalo ou a um evento com datas diferentes.
+
+| Informação                              | Proveniência e revisão                                                                                 |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Bônus semanais e condições da temporada | `sourceUrl`: [Twilight Trails — Leek Duck](https://leekduck.com/events/season-24-twilight-trails/)     |
+| Pokémon da descoberta extraordinária    | `sourceUrl`: [Research Breakthrough — Leek Duck](https://leekduck.com/research/#research-breakthrough) |
+| Data de conferência do suplemento       | `reviewedAt`: `2026-10-07`                                                                             |
+
+O calendário apresenta a fonte e a data de revisão desses complementos. **Atualizar dados** consulta novamente os feeds, mas não revisa esse conteúdo editorial nem altera seu `reviewedAt`. Para atualizar o suplemento, é necessário conferir as páginas de origem e publicar os dados revisados. As condições da fonte continuam valendo, incluindo exceções nas semanas de eventos globais, faixas de horário e bônus restritos à participação presencial. A presença de um bônus semanal não confirma um Pokémon específico para aquela data.
+
+## Novidades e lembretes
+
 - Salve lembretes e exporte um evento ou toda a lista em `.ics` para seu aplicativo de calendário.
+- Um evento precisa de início e fim válidos para ser salvo ou exportado. Eventos encerrados podem continuar na lista de lembretes para consulta ou remoção; não geram novos avisos.
 - Ative notificações do navegador para avisos cerca de 15 minutos antes, quando o navegador permitir. **A página precisa permanecer aberta**, e o navegador pode suspender temporizadores. Não há serviço de push em segundo plano.
 - Para alertas com o site fechado, importe o arquivo no calendário e habilite os avisos nele. O arquivo exportado é uma cópia: alterações posteriores de horário exigem nova exportação/importação.
 - A opção de acompanhar rotações mostra avisos dentro da página quando novas consultas identificam mudanças. As consultas automáticas acontecem a cada 15 minutos enquanto a página está visível.
@@ -103,17 +134,17 @@ A coleção continua na chave `pgo`, mantendo o formato anterior:
 
 Cada registro mantém `uid`, `id` (número da Pokédex), `name`, `cp`, `note`, `iv`, as tags booleanas e, quando presente, `evolvedFrom`. Não é necessário migrar um backup válido da versão anterior. Ao publicar no **mesmo domínio/origem e navegador**, os registros existentes continuam disponíveis.
 
-| Chave no `localStorage` | Conteúdo |
-| --- | --- |
-| `pgo` | Coleção e desejos, compatíveis com o formato anterior |
-| `pgo-dex` | Nomes e números da Pokédex |
-| `pgo-evo` | Cadeias de evolução consultadas |
-| `pgo-stats` | Atributos calculados para espécies fora da tabela embutida |
-| `pgo-companion-feed-v1` | Cache dos cinco feeds e horários das consultas |
-| `pgo-profile` | Perfil e código de treinador |
-| `pgo-reminders` | Lembretes de eventos |
-| `pgo-notifications` | Preferência de notificações |
-| `pgo-watch` | Preferência de avisos de rotações |
+| Chave no `localStorage` | Conteúdo                                                   |
+| ----------------------- | ---------------------------------------------------------- |
+| `pgo`                   | Coleção e desejos, compatíveis com o formato anterior      |
+| `pgo-dex`               | Nomes e números da Pokédex                                 |
+| `pgo-evo`               | Cadeias de evolução consultadas                            |
+| `pgo-stats`             | Atributos calculados para espécies fora da tabela embutida |
+| `pgo-companion-feed-v1` | Cache dos cinco feeds e horários das consultas             |
+| `pgo-profile`           | Perfil e código de treinador                               |
+| `pgo-reminders`         | Lembretes de eventos                                       |
+| `pgo-notifications`     | Preferência de notificações                                |
+| `pgo-watch`             | Preferência de avisos de rotações                          |
 
 **Exportar backup** gera um JSON com as listas `have` e `want`, `version: 2` e um bloco `companion` contendo perfil e lembretes. A chave local `pgo` continua contendo apenas a coleção no formato original. Backups antigos com `have` e `want` continuam importáveis; sem um bloco `companion`, não substituem perfil e lembretes. Preferências de avisos e a permissão de notificações do navegador não são transportadas. Os lembretes também têm exportação própria em calendário.
 
@@ -145,6 +176,10 @@ collection.js       Coleção, backups, evoluções e cálculos
 companion-data.js   Consulta, normalização e cache dos feeds
 companion-rules.js  Regras do radar e identificação de mudanças de rotação
 app.js              Integração da interface, guias e radar
+calendar-rules.js   Datas, categorias e recortes do calendário mensal
+brazil-event-scope.js Disponibilidade no Brasil e exceções regionais verificadas
+event-calendar.js   Resumo visual, grade mensal e detalhes dos eventos
+event-calendar.css  Estilos do calendário e dos cartões de eventos
 trainer.js          Perfil, QR, lembretes e calendário
 trainer.css         Estilos de perfil e lembretes
 vendor/qrcode.js    Gerador de QR incluído localmente

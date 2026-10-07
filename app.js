@@ -89,8 +89,6 @@
   };
   let feed = null,
     guide = "raids",
-    eventFilter = "active",
-    eventLimit = 8,
     toastTimer,
     loading = false;
   const titles = {
@@ -733,87 +731,15 @@
     c.append(label1, label2, out);
     return c;
   }
+  const eventCalendar = EventCalendar.create($("calendar-host"), {
+    onToast: toast,
+  });
   function drawEvents() {
-    const host = $("event-list");
-    host.replaceChildren();
     feedStatus("events-status", ["events"]);
-    document.querySelectorAll("[data-events]").forEach((b) => {
-      b.classList.toggle("selected", b.dataset.events === eventFilter);
-      b.setAttribute("aria-pressed", String(b.dataset.events === eventFilter));
+    eventCalendar.update(feed?.events || [], {
+      ready: Boolean(feed),
+      error: feed?.sources.events.status === "error",
     });
-    if (!feed) {
-      host.append(el("div", "empty", "Consultando agenda…"));
-      return;
-    }
-    const rows = feed.events
-      .filter(
-        (e) =>
-          eventFilter === "all" || CompanionData.eventStatus(e) === eventFilter,
-      )
-      .sort(
-        (a, b) =>
-          (Date.parse(a.start) || Infinity) - (Date.parse(b.start) || Infinity),
-      );
-    if (!rows.length)
-      host.append(
-        el(
-          "div",
-          "empty",
-          feed.sources.events.status === "error"
-            ? "Agenda indisponível. Tente atualizar os dados."
-            : "Nenhum evento nesta categoria no momento.",
-        ),
-      );
-    rows.slice(0, eventLimit).forEach((e) => {
-      const c = el("article", "event-card");
-      if (e.image) c.append(img(e.image, "", "event-image"));
-      const b = el("div", "event-body"),
-        top = el("div", "event-topline"),
-        state = CompanionData.eventStatus(e);
-      top.append(
-        el("span", "event-type", e.heading || e.type.replaceAll("-", " ")),
-        el("span", "status-chip " + state, statusText(e)),
-      );
-      b.append(
-        top,
-        el("h3", "", e.name),
-        el("p", "", dateLabel(e.start) + " → " + dateLabel(e.end)),
-      );
-      if (e.bonuses.length) b.append(el("p", "", e.bonuses.join(" · ")));
-      const actions = el("div", "event-actions");
-      if (e.start && e.end && Date.parse(e.end) > Date.now()) {
-        actions.append(
-          action(
-            TrainerCompanion.isSaved(e.id)
-              ? "✓ Lembrete salvo"
-              : "＋ Lembrar deste evento",
-            () => {
-              const saved = TrainerCompanion.toggleReminder(e);
-              toast(
-                saved
-                  ? "Evento salvo. Exporte para o calendário para avisos com o site fechado."
-                  : "Lembrete removido.",
-              );
-            },
-          ),
-        );
-      }
-      if (e.url) actions.append(external("Ver detalhes", e.url));
-      b.append(actions);
-      c.append(b);
-      host.append(c);
-    });
-    if (rows.length > eventLimit)
-      host.append(
-        action(
-          "Mostrar mais eventos (" + (rows.length - eventLimit) + ")",
-          () => {
-            eventLimit += 8;
-            drawEvents();
-          },
-          "ghost more-events",
-        ),
-      );
   }
   function feedChanges(previous, current) {
     if (!previous) return;
@@ -846,8 +772,12 @@
     });
     try {
       const next = await CompanionData.loadAll({ force });
-      feedChanges(feed, next);
-      feed = next;
+      const brazilFeed = {
+        ...next,
+        events: BrazilEventScope.filter(next.events),
+      };
+      feedChanges(feed, brazilFeed);
+      feed = brazilFeed;
       feedStatus("home-status", Object.keys(feedNames));
       TrainerCompanion.refresh(feed.events);
       drawRadar();
@@ -886,14 +816,6 @@
   document
     .querySelectorAll("[data-guide]")
     .forEach((b) => (b.onclick = () => setGuide(b.dataset.guide)));
-  document.querySelectorAll("[data-events]").forEach(
-    (b) =>
-      (b.onclick = () => {
-        eventFilter = b.dataset.events;
-        eventLimit = 8;
-        drawEvents();
-      }),
-  );
   document
     .querySelectorAll("[data-filter]")
     .forEach((b) => (b.onclick = () => Collection.filter(b.dataset.filter)));
@@ -978,7 +900,8 @@
   setInterval(() => {
     if (feed && document.visibilityState === "visible") {
       drawHomeEvents();
-      if (!document.activeElement?.closest("#event-list")) drawEvents();
+      if (!document.activeElement?.closest("#calendar-host, .cal-dialog"))
+        drawEvents();
     }
   }, 60000);
 })();
