@@ -309,3 +309,238 @@ test("cached raw data is validated again and future timestamps are rejected", as
     assert.deepEqual(result.raids, []);
   }
 });
+
+test("multi-species Spotlight and breakthrough lists preserve metadata and deduplicate legacy rows", () => {
+  const second = {
+    name: "Eevee",
+    image: picture.replace("pm25", "pm133"),
+    canBeShiny: false,
+  };
+  const spotlight = data.normalize("events", [
+    {
+      ...fixtures.events[0],
+      extraData: {
+        spotlight: {
+          ...pokemon,
+          list: [pokemon, second],
+          bonus: "<b>2× Catch XP</b>",
+        },
+        generic: { hasSpawns: true, hasFieldResearchTasks: false },
+      },
+    },
+  ])[0];
+  assert.deepEqual(
+    spotlight.pokemon.map((p) => p.dexId),
+    [25, 133],
+  );
+  assert.deepEqual(spotlight.featuredNames, ["Pikachu", "Eevee"]);
+  assert.equal(spotlight.pokemon[1].canBeShiny, false);
+  assert.equal(spotlight.hasSpawns, true);
+  assert.equal(spotlight.hasFieldResearchTasks, false);
+  assert.equal(spotlight.pokemonSource, "structured");
+  assert.deepEqual(spotlight.bonuses, ["2× Catch XP"]);
+  for (const breakthrough of [
+    [pokemon, second],
+    { ...pokemon, list: [pokemon, second] },
+  ]) {
+    const event = data.normalize("events", [
+      {
+        name: "Season encounters",
+        eventType: "research-breakthrough",
+        extraData: { breakthrough },
+      },
+    ])[0];
+    assert.deepEqual(
+      event.pokemon.map((p) => p.dexId),
+      [25, 133],
+    );
+  }
+});
+
+test("Community Day shiny metadata confirms only matching spawns and retains bonus exceptions", () => {
+  const event = data.normalize("events", [
+    {
+      name: "Pikachu Community Day",
+      eventType: "community-day",
+      extraData: {
+        communityday: {
+          spawns: [{ ...pokemon, canBeShiny: undefined }],
+          shinies: [
+            { ...pokemon, image: picture.replace(".icon", ".s.icon") },
+            { name: "Raichu", image: picture.replace("pm25", "pm26") },
+          ],
+          bonuses: [{ text: "1-hour Lures*" }],
+          bonusDisclaimers: ["<span>* Excludes Golden Lures.</span>"],
+        },
+      },
+    },
+  ])[0];
+  assert.equal(
+    event.pokemon.length,
+    1,
+    "the evolved shiny is not misrepresented as an event spawn",
+  );
+  assert.equal(event.pokemon[0].canBeShiny, true);
+  assert.equal(event.pokemon[0].shinyOdds, null);
+  assert.deepEqual(event.bonusDisclaimers, ["* Excludes Golden Lures."]);
+});
+
+test("Raid Hours reuse only exact-form metadata from a containing raid rotation", () => {
+  const hour = {
+    eventID: "giratina-hour",
+    name: "Giratina (Origin Forme) Raid Hour",
+    eventType: "raid-hour",
+    start: "2026-10-28T18:00:00",
+    end: "2026-10-28T19:00:00",
+  };
+  const rotation = {
+    eventID: "giratina-rotation",
+    name: "Giratina (Origin) in raids",
+    eventType: "raid-battles",
+    start: "2026-10-28T06:00:00",
+    end: "2026-11-03T22:00:00",
+    link: "https://leekduck.com/events/giratina/",
+    extraData: {
+      raidbattles: {
+        bosses: [
+          {
+            name: "Giratina (Origin)",
+            image: picture.replace("pm25", "pokemon_icon_487_12"),
+            canBeShiny: true,
+          },
+        ],
+      },
+    },
+  };
+  const [normalized] = data.normalize("events", [hour, rotation]);
+  assert.equal(normalized.pokemon[0].dexId, 487);
+  assert.equal(normalized.pokemon[0].canBeShiny, true);
+  assert.equal(normalized.pokemon[0].sourceEventId, "giratina-rotation");
+  assert.equal(normalized.pokemonSource, "related-event");
+  for (const wrong of [
+    { ...rotation, end: "2026-10-27T22:00:00" },
+    { ...rotation, start: null },
+    { ...rotation, name: "Shadow Giratina in raids" },
+    {
+      ...rotation,
+      extraData: {
+        raidbattles: {
+          bosses: [
+            {
+              name: "Giratina (Altered)",
+              image: picture.replace("pm25", "pm487"),
+              canBeShiny: true,
+            },
+          ],
+        },
+      },
+    },
+  ]) {
+    const [unmatched] = data.normalize("events", [hour, wrong]);
+    assert.deepEqual(unmatched.pokemon, []);
+    assert.equal(unmatched.pokemonSource, "title");
+  }
+  const [ambiguous] = data.normalize("events", [
+    hour,
+    rotation,
+    { ...rotation, eventID: "duplicate-rotation" },
+  ]);
+  assert.deepEqual(
+    ambiguous.pokemon,
+    [],
+    "ambiguous source records must not pick arbitrary shiny/form metadata",
+  );
+});
+
+test("Max event titles expose featured names without inventing sprites, shinies or schedules", () => {
+  const events = data.normalize("events", [
+    { name: "Dynamax Rookidee during Max Monday", eventType: "max-mondays" },
+    {
+      name: "Dynamax Uxie, Mesprit, and Azelf Max Battle Day",
+      eventType: "max-battles",
+    },
+    { name: "Super Mega Raid Day", eventType: "raid-day" },
+    { name: "Surprise event", eventType: "max-mondays" },
+  ]);
+  assert.deepEqual(events[0].featuredNames, ["Rookidee"]);
+  assert.deepEqual(events[1].featuredNames, ["Uxie", "Mesprit", "Azelf"]);
+  for (const event of events) {
+    assert.deepEqual(event.pokemon, []);
+    assert.equal(event.start, null);
+    assert.equal(event.end, null);
+  }
+  assert.deepEqual(events[2].featuredNames, []);
+  assert.deepEqual(events[3].featuredNames, []);
+});
+
+const twilight = {
+  eventID: "season-24-twilight-trails",
+  name: "Twilight Trails",
+  eventType: "season",
+  start: "2026-09-08T10:00:00.000",
+  end: "2026-12-01T10:00:00.000",
+  link: "https://leekduck.com/events/season-24-twilight-trails/",
+};
+
+test("reviewed season facts are bound to the exact season and expose provenance independently of download time", () => {
+  const season = data.normalize("events", [twilight])[0];
+  assert.deepEqual(
+    season.weeklyBonuses.map((day) => day.day),
+    [0, 1, 2, 3, 4, 5],
+  );
+  assert.match(
+    season.weeklyBonuses.find((day) => day.day === 4).bonuses.join(" "),
+    /Holofote/,
+  );
+  assert.equal(season.seasonGuide.reviewedAt, "2026-10-07");
+  assert.equal(season.seasonGuide.start, twilight.start);
+  assert.match(season.seasonGuide.notes.join(" "), /não ficam disponíveis/);
+  assert.equal(season.researchBreakthrough.pokemon.length, 67);
+  assert.equal(
+    season.researchBreakthrough.pokemon.find((p) => p.name === "Blipbug").dexId,
+    824,
+  );
+  assert.equal(
+    season.researchBreakthrough.pokemon.find((p) => p.name === "Dreepy")
+      .canBeShiny,
+    false,
+  );
+  assert.equal(
+    season.researchBreakthrough.pokemon.find((p) => p.name === "Charizard")
+      .canBeShiny,
+    true,
+  );
+  assert.equal(
+    season.researchBreakthrough.sourceUrl,
+    "https://leekduck.com/research/#research-breakthrough",
+  );
+  assert.ok(
+    season.researchBreakthrough.pokemon.every((p) => p.shinyOdds === null),
+  );
+  assert.deepEqual(
+    season.pokemon,
+    [],
+    "a season's breakthrough pool is not its advertised wild spawn list",
+  );
+  season.weeklyBonuses[0].bonuses.push("consumer mutation");
+  assert.ok(
+    !data
+      .normalize("events", [twilight])[0]
+      .weeklyBonuses[0].bonuses.includes("consumer mutation"),
+  );
+});
+
+test("season supplement never leaks into a different season, changed period, missing dates or UTC reinterpretation", () => {
+  for (const row of [
+    { ...twilight, eventID: "season-25-new-season" },
+    { ...twilight, eventType: "event" },
+    { ...twilight, start: null },
+    { ...twilight, end: "2026-12-02T10:00:00" },
+    { ...twilight, start: "2026-09-08T10:00:00Z", end: "2026-12-01T10:00:00Z" },
+  ]) {
+    const event = data.normalize("events", [row])[0];
+    assert.deepEqual(event.weeklyBonuses, []);
+    assert.equal(event.seasonGuide, null);
+    assert.equal(event.researchBreakthrough, null);
+  }
+});

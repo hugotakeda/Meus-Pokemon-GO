@@ -143,6 +143,7 @@
     $("names").innerHTML = Object.keys(dex)
       .map((n) => `<option value="${n}">`)
       .join("");
+    document.dispatchEvent(new CustomEvent("pgo-dex-ready"));
   }
 
   function resolve(txt) {
@@ -809,6 +810,7 @@
     }
   };
   window.Collection = {
+    resolveName: resolve,
     getData: () => data,
     getStorageStatus: () => ({
       blocked: recoveryRequired,

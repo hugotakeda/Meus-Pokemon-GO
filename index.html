@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="legacy.css" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="trainer.css" />
+    <link rel="stylesheet" href="event-calendar.css" />
   </head>
   <body>
     <a class="skip-link" href="#content">Pular para o conteúdo</a>
@@ -320,28 +321,20 @@
           <div class="page-heading">
             <div>
               <p class="eyebrow">NÃO DEIXE A AVENTURA PASSAR</p>
-              <h1>Eventos e novidades</h1>
-              <p>
-                Organize sua agenda e guarde os encontros que mais importam.
-              </p>
+              <h1>Seu próximo encontro começa aqui.</h1>
+              <p>Pokémon, datas e bônus. O mês inteiro, em um só lugar.</p>
             </div>
             <button class="ghost refresh-data">
               <i data-icon="refresh"></i> Atualizar dados
             </button>
           </div>
           <div id="events-status" class="feed-notice" role="status"></div>
-          <div class="events-layout">
+          <div id="calendar-host"></div>
+          <div class="calendar-extras">
             <div>
-              <div class="quick-filters" id="event-filters">
-                <button data-events="active" class="selected">
-                  Acontecendo</button
-                ><button data-events="upcoming">Em breve</button
-                ><button data-events="all">Todos</button>
-              </div>
-              <div id="event-list" class="event-list"></div>
+              <div id="reminders-host"></div>
             </div>
             <aside>
-              <div id="reminders-host"></div>
               <div class="news-box">
                 <span class="eyebrow">DIRETO DA FONTE</span>
                 <h2>Novidades oficiais</h2>
@@ -608,6 +601,9 @@
     <script src="companion-data.js"></script>
     <script src="companion-rules.js"></script>
     <script src="collection.js"></script>
+    <script src="brazil-event-scope.js"></script>
+    <script src="calendar-rules.js"></script>
+    <script src="event-calendar.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
