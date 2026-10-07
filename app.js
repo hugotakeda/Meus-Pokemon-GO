@@ -291,9 +291,20 @@
       const available = encounters.find((p) => wishMatches(w, p)),
         row = el("div", "radar-row"),
         copy = el("div");
-      row.append(img(art(w.id), w.name));
+      row.append(
+        img(
+          art(window.Collection?.formId ? window.Collection.formId(w) : w.id),
+          w.name,
+        ),
+      );
       copy.append(
-        el("strong", "", w.name + (w.shiny ? " ✦" : "")),
+        el(
+          "strong",
+          "",
+          w.name +
+            (w.form === "alola" ? " (Alola)" : "") +
+            (w.shiny ? " ✦" : ""),
+        ),
         el(
           "span",
           "",

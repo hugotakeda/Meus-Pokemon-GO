@@ -11,6 +11,23 @@
     lucky: "Sortudo",
     mega: "Mega",
   };
+  // Formas de Alola: número da Pokédex -> ID da forma na PokéAPI.
+  // Esse ID aponta para a arte oficial (normal e shiny) e para os atributos base.
+  // prettier-ignore
+  const ALOLA = {19:10091,20:10092,26:10100,27:10101,28:10102,37:10103,38:10104,50:10105,51:10106,52:10107,53:10108,74:10109,75:10110,76:10111,88:10112,89:10113,103:10114,105:10115};
+  const hasAlola = (id) => Object.prototype.hasOwnProperty.call(ALOLA, id);
+  const formIdFor = (id, form) =>
+    form === "alola" && hasAlola(id) ? ALOLA[id] : id;
+  const formId = (e) => formIdFor(e.id, e.form);
+  // Aceita "raichu-alola", "alolan raichu", "raichu de alola", etc.
+  const ALOLA_WORD = /(^|-)(?:de-)?alolan?(?:-form)?(?=-|$)/;
+  const slug = (txt) => txt.trim().toLowerCase().replace(/\s+/g, "-");
+  const wantsAlola = (txt) => ALOLA_WORD.test(slug(txt));
+  const artUrls = (e) => {
+    const id = formId(e),
+      normal = ART + id + ".png";
+    return e.shiny ? [ART + "shiny/" + id + ".png", normal] : [normal];
+  };
   let dex = {},
     data = { have: [], want: [] },
     tab = "have",
@@ -63,6 +80,7 @@
           iv: e.iv ? e.iv.slice() : null,
         };
         Object.keys(FLAGS).forEach((f) => (entry[f] = e[f] === true));
+        if (e.form === "alola" && hasAlola(e.id)) entry.form = "alola";
         if (entry.iv) entry.hundo = entry.iv.every((v) => v === 15);
         else if (entry.hundo) entry.iv = [15, 15, 15];
         if (typeof e.evolvedFrom === "string")
@@ -141,20 +159,30 @@
       }
     }
     $("names").innerHTML = Object.keys(dex)
+      .flatMap((n) => (hasAlola(dex[n]) ? [n, n + "-alola"] : [n]))
       .map((n) => `<option value="${n}">`)
       .join("");
     document.dispatchEvent(new CustomEvent("pgo-dex-ready"));
   }
 
   function resolve(txt) {
-    const t = txt.trim().toLowerCase().replace(/\s+/g, "-");
+    let t = slug(txt);
+    const alola = ALOLA_WORD.test(t);
+    if (alola) t = t.replace(ALOLA_WORD, "").replace(/^-+|-+$/g, "");
+    let found = null;
     if (/^\d+$/.test(t)) {
       const id = +t;
-      return id > 0 && id <= 1025
-        ? { id, name: Object.keys(dex).find((k) => dex[k] === id) || "#" + id }
-        : null;
+      if (id > 0 && id <= 1025)
+        found = {
+          id,
+          name: Object.keys(dex).find((k) => dex[k] === id) || "#" + id,
+        };
+    } else if (dex[t]) found = { id: dex[t], name: t };
+    if (found && alola) {
+      if (!hasAlola(found.id)) return null;
+      found.form = "alola";
     }
-    return dex[t] ? { id: dex[t], name: t } : null;
+    return found;
   }
 
   function add(list) {
@@ -165,10 +193,13 @@
     }
     const p = resolve($("name").value);
     if (!p) {
-      $("msg").textContent =
-        "Não encontrei esse Pokémon. Use o nome em inglês ou o número da Pokédex.";
+      $("msg").textContent = wantsAlola($("name").value)
+        ? "Não encontrei essa forma de Alola. Confira o nome ou escolha um Pokémon que tenha forma de Alola."
+        : "Não encontrei esse Pokémon. Use o nome em inglês ou o número da Pokédex.";
       return;
     }
+    const form =
+      p.form || (hasAlola(p.id) && $("form").value === "alola" ? "alola" : "");
     const iv = readIV("iA", "iD", "iS");
     if (iv === false) {
       $("msg").textContent =
@@ -185,6 +216,7 @@
       note: $("note").value.trim(),
       iv,
     };
+    if (form) e.form = form;
     Object.keys(FLAGS).forEach((f) => (e[f] = $(f).checked));
     if (iv && iv.every((x) => x === 15)) e.hundo = true;
     if (e.hundo && !e.iv) e.iv = [15, 15, 15];
@@ -192,6 +224,8 @@
     save();
     ["name", "cp", "note", "iA", "iD", "iS"].forEach((i) => ($(i).value = ""));
     Object.keys(FLAGS).forEach((f) => ($(f).checked = false));
+    $("form").value = "";
+    syncForm();
     showIV("iA", "iD", "iS", "ivRes");
     upd();
     tab = list;
@@ -202,18 +236,23 @@
     );
   }
 
+  // A arte segue a forma do registro (normal ou de Alola) e a tag shiny.
+  // Se a arte shiny não existir, volta para a normal da mesma forma.
   function pic(e) {
     const img = document.createElement("img");
-    img.alt = e.name;
+    img.alt = e.name + (e.form === "alola" ? " (Alola)" : "");
     img.loading = "lazy";
-    const normal = ART + e.id + ".png";
-    img.src = e.shiny ? ART + "shiny/" + e.id + ".png" : normal;
+    const urls = artUrls(e);
+    let i = 0;
+    img.src = urls[0];
     img.onerror = () => {
-      if (img.src !== normal) img.src = normal;
+      if (++i < urls.length) img.src = urls[i];
       else img.replaceWith(document.createTextNode("?"));
     };
     return img;
   }
+  const searchName = (e) =>
+    e.name.toLowerCase() + (e.form === "alola" ? " alola alolan" : "");
 
   const SORTS = [
     ["add", "Ordem de adição"],
@@ -276,7 +315,7 @@
     const items = data[tab].filter(
       (e) =>
         (!q ||
-          e.name.toLowerCase().includes(q) ||
+          searchName(e).includes(q) ||
           String(e.id) === q.replace("#", "")) &&
         (flt === "all" || e[flt]),
     );
@@ -326,7 +365,7 @@
       const c = document.createElement("div");
       c.className = "card " + on.join(" ");
       const lt = levelText(e);
-      c.innerHTML = `<div class="cp">${e.cp ? "CP <b>" + (+e.cp | 0) + "</b>" + (lt ? '<span class="lv">Nível <b>' + lt + "</b></span>" : "") : ""}</div><div class="pic"></div><div class="badges">${on.map((f) => `<span class="b ${f}">${FLAGS[f]}</span>`).join("")}</div><div class="nm"></div><div class="from"></div><div class="iv"></div><div class="nt"></div><div class="acts"></div>`;
+      c.innerHTML = `<div class="cp">${e.cp ? "CP <b>" + (+e.cp | 0) + "</b>" + (lt ? '<span class="lv">Nível <b>' + lt + "</b></span>" : "") : ""}</div><div class="pic"></div><div class="badges">${on.map((f) => `<span class="b ${f}">${FLAGS[f]}</span>`).join("")}${e.form === "alola" ? '<span class="b alola">Alola</span>' : ""}</div><div class="nm"></div><div class="from"></div><div class="iv"></div><div class="nt"></div><div class="acts"></div>`;
       c.querySelector(".pic").append(pic(e));
       const nm = c.querySelector(".nm");
       nm.textContent = e.name + " ";
@@ -394,9 +433,7 @@
       g.append(c);
     });
     const need = [
-      ...new Set(
-        items.filter((e) => e.iv && cpOf(e) && !e.mega).map((e) => e.id),
-      ),
+      ...new Set(items.filter((e) => e.iv && cpOf(e) && !e.mega).map(formId)),
     ].filter((id) => !statsOf(id) && !statsFail.has(id));
     if (need.length) Promise.all(need.map(getStats)).then(render);
     if (tab === "have") {
@@ -483,7 +520,7 @@
   };
   function levelText(e) {
     const cp = +e.cp,
-      st = statsOf(e.id);
+      st = statsOf(formId(e));
     if (e.mega || !e.iv || !cp || !st) return "";
     const r = calcLevel(st, e.iv, cp);
     return r ? fmtLv(r) : "";
@@ -565,7 +602,10 @@
   let cur = null;
   function openEdit(e) {
     cur = e;
-    $("eTitle").textContent = "Editar " + e.name;
+    $("eTitle").textContent =
+      "Editar " + e.name + (e.form === "alola" ? " (Alola)" : "");
+    $("eFormBox").hidden = !hasAlola(e.id);
+    $("eForm").value = e.form === "alola" && hasAlola(e.id) ? "alola" : "";
     const box = $("eFlags");
     box.innerHTML = "";
     Object.keys(FLAGS).forEach((f) => {
@@ -601,6 +641,8 @@
       .forEach((i) => (cur[i.dataset.f] = i.checked));
     if (iv && iv.every((x) => x === 15)) cur.hundo = true;
     if (cur.hundo && !cur.iv) cur.iv = [15, 15, 15];
+    if (hasAlola(cur.id) && $("eForm").value === "alola") cur.form = "alola";
+    else delete cur.form;
     cur.cp = $("eCp").value;
     cur.note = $("eNote").value.trim();
     save();
@@ -648,6 +690,9 @@
     cur.evolvedFrom = cur.name;
     cur.id = p.id;
     cur.name = p.name;
+    // Mantém a forma de Alola se a evolução também a tiver; senão volta ao normal.
+    if (p.form || (cur.form === "alola" && hasAlola(p.id))) cur.form = "alola";
+    else delete cur.form;
     cur.cp = $("vCp").value;
     save();
     $("dEvo").close();
@@ -670,19 +715,47 @@
   );
   const upd = () => {
     const p = resolve($("name").value);
-    updateLv("lvRes", p && p.id, "cp", ["iA", "iD", "iS"], $("mega").checked);
+    updateLv(
+      "lvRes",
+      p && formIdFor(p.id, p.form || $("form").value),
+      "cp",
+      ["iA", "iD", "iS"],
+      $("mega").checked,
+    );
   };
-  ["name", "cp", "iA", "iD", "iS"].forEach((i) =>
-    $(i).addEventListener("input", upd),
-  );
+  // Mostra o campo "Forma" só quando a espécie tem forma de Alola.
+  function syncForm() {
+    const p = resolve($("name").value),
+      can = !!p && hasAlola(p.id);
+    $("formRow").hidden = !can;
+    if (!can) $("form").value = "";
+    else if (p.form) $("form").value = "alola";
+  }
+  ["cp", "iA", "iD", "iS"].forEach((i) => $(i).addEventListener("input", upd));
+  $("name").addEventListener("input", () => {
+    syncForm();
+    upd();
+  });
+  $("form").addEventListener("change", () => {
+    const p = resolve($("name").value);
+    if (p && p.form && $("form").value !== "alola") $("name").value = p.name;
+    upd();
+  });
   $("mega").addEventListener("change", upd);
   const eMega = () =>
     document.querySelector("#eFlags input[data-f=mega]").checked;
   const eUpd = () =>
-    updateLv("eLv", cur && cur.id, "eCp", ["eA", "eD", "eS"], eMega());
+    updateLv(
+      "eLv",
+      cur && formIdFor(cur.id, $("eForm").value),
+      "eCp",
+      ["eA", "eD", "eS"],
+      eMega(),
+    );
   ["eCp", "eA", "eD", "eS"].forEach((i) =>
     $(i).addEventListener("input", eUpd),
   );
+  $("eForm").addEventListener("change", eUpd);
   $("eFlags").addEventListener("change", (ev) => {
     if (ev.target.dataset.f === "hundo") {
       setHundoIV(eIV, ev.target.checked);
@@ -811,6 +884,7 @@
   };
   window.Collection = {
     resolveName: resolve,
+    formId,
     getData: () => data,
     getStorageStatus: () => ({
       blocked: recoveryRequired,
@@ -842,13 +916,18 @@
       )
         return false;
       const mega = /\bmega\b/i.test(pokemon.name || "");
+      const form =
+        /\balolan?\b/i.test(pokemon.name || "") && hasAlola(pokemon.dexId)
+          ? "alola"
+          : "";
       if (
         data.want.some(
           (e) =>
             e.id === pokemon.dexId &&
             !!e.shiny === shiny &&
             !!e.shadow === !!pokemon.shadow &&
-            !!e.mega === mega,
+            !!e.mega === mega &&
+            (e.form || "") === form,
         )
       )
         return false;
@@ -866,6 +945,7 @@
       entry.shiny = shiny;
       entry.shadow = !!pokemon.shadow;
       entry.mega = mega;
+      if (form) entry.form = form;
       data.want.push(entry);
       save();
       render();

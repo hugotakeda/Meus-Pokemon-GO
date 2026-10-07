@@ -126,6 +126,9 @@ function createApp(saved = { have: [], want: [] }, options = {}) {
         pikachu: 25,
         raichu: 26,
         magikarp: 129,
+        rattata: 19,
+        raticate: 20,
+        vulpix: 37,
       }),
     ],
     [
@@ -137,6 +140,9 @@ function createApp(saved = { have: [], want: [] }, options = {}) {
         25: ["raichu"],
         26: [],
         129: ["gyarados"],
+        19: ["raticate"],
+        20: [],
+        37: ["ninetales"],
       }),
     ],
   ]);
@@ -726,6 +732,10 @@ test("the redesigned page retains each required collection control without dupli
     "purified",
     "lucky",
     "mega",
+    "form",
+    "formRow",
+    "eForm",
+    "eFormBox",
   ])
     required.add(id);
   for (const id of required)
@@ -737,4 +747,261 @@ test("the redesigned page retains each required collection control without dupli
     "only collection list switches should use the legacy .tab class",
   );
   assert.ok(tabTags.every((tag) => /data-t="(?:have|want)"/.test(tag)));
+});
+
+const ART =
+  "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/";
+
+test("Alolan form IDs point to the PokeAPI form artwork, normal and shiny", () => {
+  const app = createApp();
+  assert.deepEqual(app.json("artUrls({ id: 26, form: 'alola' })"), [
+    ART + "10100.png",
+  ]);
+  assert.deepEqual(app.json("artUrls({ id: 26, form: 'alola', shiny: true })"), [
+    ART + "shiny/10100.png",
+    ART + "10100.png",
+  ]);
+  assert.deepEqual(app.json("artUrls({ id: 26 })"), [ART + "26.png"]);
+  assert.deepEqual(app.json("artUrls({ id: 26, shiny: true })"), [
+    ART + "shiny/26.png",
+    ART + "26.png",
+  ]);
+  // A species without an Alolan form keeps its default artwork.
+  assert.deepEqual(app.json("artUrls({ id: 25, form: 'alola' })"), [
+    ART + "25.png",
+  ]);
+});
+
+test("all 18 Alolan species resolve to distinct form IDs", () => {
+  const app = createApp();
+  const table = app.json("ALOLA");
+  assert.equal(Object.keys(table).length, 18);
+  assert.equal(new Set(Object.values(table)).size, 18);
+  for (const [dex, form] of Object.entries(table)) {
+    assert.ok(+dex >= 1 && +dex <= 1025);
+    assert.ok(form >= 10091 && form <= 10115, `form ${form} for #${dex}`);
+  }
+});
+
+test("Alolan card image falls back from shiny to normal Alola art, never to the base species", () => {
+  const app = createApp();
+  const img = app.evaluate(
+    "pic({ id: 26, name: 'raichu', form: 'alola', shiny: true })",
+  );
+  assert.equal(img.src, ART + "shiny/10100.png");
+  img.onerror();
+  assert.equal(img.src, ART + "10100.png");
+  img.onerror(); // nothing left to try: shows the placeholder without throwing
+});
+
+test("typed Alola names resolve to the species with the Alola form", () => {
+  const app = createApp();
+  for (const text of [
+    "raichu-alola",
+    "Raichu Alola",
+    "alolan raichu",
+    "Alolan-Raichu",
+    "raichu de alola",
+    "26 alola",
+  ])
+    assert.deepEqual(
+      app.json(`resolve(${JSON.stringify(text)})`),
+      { id: 26, name: "raichu", form: "alola" },
+      text,
+    );
+  assert.deepEqual(app.json("resolve('raichu')"), { id: 26, name: "raichu" });
+  // Species with no Alolan form cannot be resolved as one.
+  assert.equal(app.evaluate("resolve('pikachu-alola')"), null);
+  assert.equal(app.evaluate("resolve('alola')"), null);
+});
+
+test("adding with the Forma selector or a typed suffix stores form: alola and keeps the entry shape", () => {
+  const app = createApp();
+  app.get("name").value = "raichu";
+  app.get("form").value = "alola";
+  app.get("cp").value = "1500";
+  app.get("shiny").checked = true;
+  app.get("addHave").click();
+  app.get("name").value = "vulpix-alola";
+  app.get("addWant").click();
+  const saved = JSON.parse(app.store.get("pgo"));
+  assert.equal(saved.have[0].id, 26);
+  assert.equal(saved.have[0].name, "raichu");
+  assert.equal(saved.have[0].form, "alola");
+  assert.equal(saved.have[0].shiny, true);
+  assert.equal(saved.want[0].id, 37);
+  assert.equal(saved.want[0].name, "vulpix");
+  assert.equal(saved.want[0].form, "alola");
+  // The selector resets for the next Pokémon.
+  assert.equal(app.get("form").value, "");
+});
+
+test("normal entries never get a form, even if the selector was left on Alola for another species", () => {
+  const app = createApp();
+  app.get("name").value = "raichu";
+  app.get("addHave").click();
+  app.get("name").value = "pikachu";
+  app.get("form").value = "alola"; // stale selector value
+  app.get("addHave").click();
+  const have = JSON.parse(app.store.get("pgo")).have;
+  assert.equal(have.length, 2);
+  assert.ok(!("form" in have[0]));
+  assert.ok(!("form" in have[1]));
+});
+
+test("an Alola name for a species without that form is rejected with a clear message", () => {
+  const app = createApp();
+  app.get("name").value = "pikachu-alola";
+  app.get("addHave").click();
+  assert.equal(JSON.parse(app.store.get("pgo")).have.length, 0);
+  assert.match(app.get("msg").textContent, /forma de Alola/);
+});
+
+test("the Forma row only appears for species that have an Alolan form", () => {
+  const app = createApp();
+  app.get("name").value = "raichu";
+  app.get("name").dispatch("input");
+  assert.equal(app.get("formRow").hidden, false);
+  app.get("name").value = "pikachu";
+  app.get("name").dispatch("input");
+  assert.equal(app.get("formRow").hidden, true);
+  assert.equal(app.get("form").value, "");
+  app.get("name").value = "raichu-alola";
+  app.get("name").dispatch("input");
+  assert.equal(app.get("form").value, "alola");
+  // Switching the selector back to Normal also removes the typed suffix.
+  app.get("form").value = "";
+  app.get("form").dispatch("change");
+  assert.equal(app.get("name").value, "raichu");
+});
+
+test("form survives export, import and normalization, and invalid forms are dropped", () => {
+  const app = createApp();
+  const normalized = app.json(`normalizeCollection({
+    have: [
+      { uid: 1, id: 26, name: "raichu", form: "alola" },
+      { uid: 2, id: 25, name: "pikachu", form: "alola" },
+      { uid: 3, id: 26, name: "raichu", form: "galar" },
+      { uid: 4, id: 26, name: "raichu" },
+    ],
+    want: [],
+  })`);
+  assert.equal(normalized.have[0].form, "alola");
+  assert.ok(!("form" in normalized.have[1]), "Pikachu has no Alolan form");
+  assert.ok(!("form" in normalized.have[2]), "unsupported forms are ignored");
+  assert.ok(!("form" in normalized.have[3]));
+});
+
+test("old collections without a form field load unchanged", () => {
+  const old = {
+    have: [{ uid: 9, id: 26, name: "raichu", cp: "900", note: "", iv: null }],
+    want: [],
+  };
+  const app = createApp(old);
+  assert.ok(!("form" in app.json("data.have[0]")));
+  assert.deepEqual(app.json("artUrls(data.have[0])"), [ART + "26.png"]);
+});
+
+test("editing can switch an entry between normal and Alola form", () => {
+  const app = createApp({
+    have: [{ uid: 5, id: 26, name: "raichu", cp: "900", note: "", iv: null }],
+    want: [],
+  });
+  app.evaluate("openEdit(data.have[0])");
+  assert.equal(app.get("eFormBox").hidden, false);
+  assert.equal(app.get("eForm").value, "");
+  app.get("eForm").value = "alola";
+  app.get("eSave").click();
+  assert.equal(JSON.parse(app.store.get("pgo")).have[0].form, "alola");
+  app.evaluate("openEdit(data.have[0])");
+  assert.equal(app.get("eForm").value, "alola");
+  assert.match(app.get("eTitle").textContent, /Alola/);
+  app.get("eForm").value = "";
+  app.get("eSave").click();
+  assert.ok(!("form" in JSON.parse(app.store.get("pgo")).have[0]));
+});
+
+test("editing hides the Forma field for species without an Alolan form", () => {
+  const app = createApp({
+    have: [{ uid: 6, id: 25, name: "pikachu", cp: "300", note: "", iv: null }],
+    want: [],
+  });
+  app.evaluate("openEdit(data.have[0])");
+  assert.equal(app.get("eFormBox").hidden, true);
+  app.get("eForm").value = "alola"; // stale value must not be saved
+  app.get("eSave").click();
+  assert.ok(!("form" in JSON.parse(app.store.get("pgo")).have[0]));
+});
+
+test("evolving keeps the Alola form when the evolution has one", () => {
+  const app = createApp({
+    have: [
+      { uid: 1, id: 19, name: "rattata", form: "alola", cp: "100", note: "", iv: null },
+    ],
+    want: [],
+  });
+  app.evaluate("cur = data.have[0]");
+  app.get("vName").value = "raticate";
+  app.get("vCp").value = "400";
+  app.get("vOk").click();
+  const evolved = JSON.parse(app.store.get("pgo")).have[0];
+  assert.equal(evolved.id, 20);
+  assert.equal(evolved.form, "alola");
+});
+
+test("evolving into a species without an Alolan form drops the form", () => {
+  const app = createApp({
+    have: [
+      { uid: 1, id: 19, name: "rattata", form: "alola", cp: "100", note: "", iv: null },
+    ],
+    want: [],
+  });
+  app.evaluate("cur = data.have[0]");
+  app.get("vName").value = "magikarp";
+  app.get("vOk").click();
+  assert.ok(!("form" in JSON.parse(app.store.get("pgo")).have[0]));
+});
+
+test("guide goals named Alolan become Alola wishes and stay separate from the normal form", () => {
+  const app = createApp();
+  assert.equal(
+    app.evaluate(
+      "window.Collection.addWanted({ dexId: 37, name: 'Alolan Vulpix' }, false)",
+    ),
+    true,
+  );
+  assert.equal(
+    app.evaluate(
+      "window.Collection.addWanted({ dexId: 37, name: 'Alolan Vulpix' }, false)",
+    ),
+    false,
+    "the same Alola goal is not duplicated",
+  );
+  assert.equal(
+    app.evaluate(
+      "window.Collection.addWanted({ dexId: 37, name: 'Vulpix' }, false)",
+    ),
+    true,
+    "the normal form is a different goal",
+  );
+  const want = JSON.parse(app.store.get("pgo")).want;
+  assert.equal(want.length, 2);
+  assert.equal(want[0].form, "alola");
+  assert.equal(want[0].name, "vulpix");
+  assert.equal(want[0].note, "Objetivo: Alolan Vulpix");
+  assert.ok(!("form" in want[1]));
+});
+
+test("level lookups use the Alolan form's stats key instead of the base species", () => {
+  const app = createApp();
+  assert.equal(app.evaluate("formIdFor(26, 'alola')"), 10100);
+  assert.equal(app.evaluate("formIdFor(26, '')"), 26);
+  assert.equal(app.evaluate("formIdFor(25, 'alola')"), 25);
+  assert.equal(app.evaluate("window.Collection.formId({ id: 38, form: 'alola' })"), 10104);
+});
+
+test("searching finds Alola entries by the word Alola", () => {
+  const app = createApp();
+  assert.ok(app.evaluate("searchName({ name: 'raichu', form: 'alola' })").includes("alola"));
+  assert.ok(!app.evaluate("searchName({ name: 'raichu' })").includes("alola"));
 });
