@@ -1,0 +1,371 @@
+.trainer-panel,
+.trainer-reminders {
+  color: var(--ink, #1b3026);
+}
+.trainer-heading {
+  max-width: 610px;
+  margin-bottom: 28px;
+}
+.trainer-eyebrow {
+  display: block;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  color: var(--mute, #627167);
+  margin-bottom: 10px;
+}
+.trainer-heading h2,
+.trainer-reminder-heading h2 {
+  font-size: clamp(1.6rem, 3vw, 2.3rem);
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+  margin: 0 0 12px;
+}
+.trainer-heading > p {
+  color: var(--mute, #627167);
+  font-size: 0.96rem;
+  margin: 0;
+}
+.trainer-profile-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.86fr);
+  gap: 36px;
+  align-items: start;
+}
+.trainer-form {
+  display: grid;
+  gap: 18px;
+}
+.trainer-form label {
+  display: grid;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+.trainer-form input,
+.trainer-form select {
+  width: 100%;
+  min-height: 47px;
+  border: 1px solid var(--line, #d9e0d5);
+  border-radius: 10px;
+  background: var(--card, #fff);
+  color: var(--ink, #1b3026);
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 0.92rem;
+  box-sizing: border-box;
+}
+.trainer-form input::placeholder {
+  color: #7b857e;
+  font-weight: 400;
+}
+.trainer-form input[aria-invalid="true"] {
+  border-color: #a33228;
+}
+.trainer-form .trainer-help {
+  margin-top: -10px;
+}
+.trainer-help {
+  color: var(--mute, #627167);
+  font-size: 0.76rem;
+  line-height: 1.65;
+  margin: 0;
+}
+.trainer-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.trainer-button {
+  appearance: none;
+  min-height: 40px;
+  height: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--green, #224b39);
+  color: #fff;
+  cursor: pointer;
+  line-height: 1.25;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+.trainer-button:hover {
+  filter: brightness(0.95);
+}
+.trainer-button:active {
+  transform: translateY(1px);
+}
+.trainer-button.trainer-secondary {
+  background: transparent;
+  color: var(--ink, #1b3026);
+  border-color: var(--line, #cbd4c7);
+}
+.trainer-button:disabled {
+  cursor: default;
+  opacity: 0.42;
+  transform: none;
+  filter: none;
+}
+.trainer-button:focus-visible,
+.trainer-event-link:focus-visible,
+.trainer-form input:focus-visible,
+.trainer-form select:focus-visible {
+  outline: 3px solid #719c43;
+  outline-offset: 3px;
+}
+.trainer-status,
+.trainer-reminder-status {
+  font-size: 0.8rem;
+  color: var(--green, #224b39);
+  margin: 0;
+  min-height: 1em;
+  line-height: 1.5;
+}
+.trainer-error {
+  color: #a33228;
+}
+.trainer-pass {
+  background: #eff4e4;
+  border: 1px solid #d2ddbe;
+  border-radius: 20px;
+  overflow: hidden;
+  padding: 22px;
+  text-align: center;
+  position: relative;
+}
+.trainer-pass-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  font-weight: 750;
+  border-bottom: 1px solid #d4ddc4;
+  padding-bottom: 18px;
+  color: #33563b;
+}
+.trainer-pass-symbol {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.trainer-pass-badge {
+  background: #d3e78a;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.trainer-pass-name {
+  font-size: 1.55rem;
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  margin: 24px 0 2px;
+  overflow-wrap: anywhere;
+  color: #1b3026;
+}
+.trainer-pass-team {
+  color: #586c4b;
+  font-size: 0.76rem;
+  margin: 0 0 22px;
+}
+.trainer-qr {
+  width: 172px;
+  height: 172px;
+  max-width: 100%;
+  border-radius: 13px;
+  margin: 0 auto;
+  background: white;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.trainer-qr svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.trainer-qr-empty {
+  color: #66795b;
+  padding: 18px;
+  font-size: 0.77rem;
+  line-height: 1.5;
+  margin: 0;
+}
+.trainer-pass-code {
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 1.08rem;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  margin: 20px 0;
+  color: #244b31;
+}
+.trainer-qr-note {
+  color: #586c4b;
+  font-size: 0.7rem;
+  line-height: 1.6;
+  max-width: 235px;
+  margin: -8px auto 18px;
+}
+.trainer-pass-actions {
+  justify-content: center;
+}
+.trainer-pass-actions .trainer-button {
+  border-color: #c0ceb0;
+  color: #29482f;
+  padding: 9px 12px;
+  font-size: 0.71rem;
+}
+.trainer-reminder-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.trainer-reminder-heading h2 {
+  margin-bottom: 0;
+}
+.trainer-reminder-count {
+  display: inline-flex;
+  min-width: 25px;
+  min-height: 25px;
+  background: #e7eddb;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  letter-spacing: 0;
+  margin-left: 8px;
+  padding: 4px;
+}
+.trainer-reminders > .trainer-help {
+  max-width: 800px;
+  margin-bottom: 12px;
+}
+.trainer-reminder-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+.trainer-reminder-empty {
+  padding: 36px 20px;
+  border: 1px dashed var(--line, #d9e0d5);
+  border-radius: 16px;
+  text-align: center;
+  color: var(--mute, #627167);
+}
+.trainer-reminder-empty > span {
+  font-size: 2rem;
+  color: #4b6c3d;
+}
+.trainer-reminder-empty > p {
+  color: var(--ink, #1b3026);
+  font-size: 0.94rem;
+  font-weight: 650;
+  margin: 8px 0;
+}
+.trainer-reminder-empty > small {
+  font-size: 0.8rem;
+}
+.trainer-reminder-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid var(--line, #d9e0d5);
+  border-radius: 14px;
+  padding: 18px;
+  background: var(--card, #fff);
+}
+.trainer-reminder-item > div:first-child {
+  min-width: 0;
+}
+.trainer-reminder-item h3 {
+  font-size: 0.98rem;
+  letter-spacing: -0.02em;
+  margin: 8px 0 5px;
+  overflow-wrap: anywhere;
+}
+.trainer-reminder-item p {
+  font-size: 0.76rem;
+  margin: 0;
+  color: var(--mute, #627167);
+}
+.trainer-reminder-tag {
+  display: inline-block;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  color: #426138;
+  background: #edf3e6;
+  padding: 4px 7px;
+  border-radius: 5px;
+}
+.trainer-reminder-item .trainer-actions {
+  flex-shrink: 0;
+}
+.trainer-event-link {
+  font-size: 0.76rem;
+  font-weight: 650;
+  color: var(--green, #224b39);
+  text-underline-offset: 3px;
+  padding: 8px 5px;
+}
+@media (max-width: 800px) {
+  .trainer-reminder-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .trainer-reminder-item .trainer-actions {
+    flex-shrink: 1;
+  }
+}
+@media (max-width: 620px) {
+  .trainer-profile-layout {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .trainer-pass {
+    max-width: 380px;
+    width: 100%;
+    box-sizing: border-box;
+    justify-self: center;
+  }
+  .trainer-heading {
+    margin-bottom: 24px;
+  }
+  .trainer-reminder-heading {
+    align-items: flex-start;
+  }
+  .trainer-reminder-controls {
+    width: 100%;
+  }
+  .trainer-reminder-controls .trainer-button {
+    flex: 1;
+  }
+  .trainer-reminder-item {
+    padding: 15px;
+  }
+  .trainer-pass-name {
+    font-size: 1.45rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trainer-button {
+    transition: none;
+  }
+}
