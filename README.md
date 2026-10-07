@@ -21,6 +21,7 @@ Abrir `index.html` diretamente pode funcionar para a coleção, mas o comportame
 ## Coleção e lista de desejos
 
 - Adicione pelo nome em inglês, com sugestões, ou pelo número da Pokédex, de 1 a 1025.
+- Selecione **Forma → Alola** ou digite, por exemplo, **Golem de Alola**, **Alolan Golem** ou **golem-alola**. As 18 formas de Alola têm nome, arte normal/shiny, atributos de CP e evoluções próprios. Para corrigir um registro antigo, use **Editar → Forma → Alola**; CP, IVs, tags e notas são mantidos. Registros antigos sem indicação de forma continuam como normais até você ajustá-los.
 - Combine as tags **100%, Shiny, Sombroso (Rocket), Purificado, Sortudo e Mega**.
 - Registre CP, IVs de ataque/defesa/PS de 0 a 15 e anotações opcionais. A tag 100% preenche 15/15/15; esses IVs também marcam a tag automaticamente.
 - Use **Tenho** e **Quero pegar**. **Peguei!** move um desejo para a coleção.
@@ -28,7 +29,7 @@ Abrir `index.html` diretamente pode funcionar para a coleção, mas o comportame
 - Busque por nome, filtre por tag e ordene por adição, mais recentes, CP, IV, nome ou número da Pokédex. Valores de CP/IV não cadastrados ficam por último.
 - Exporte e importe sua coleção em JSON. A importação valida os registros e pede confirmação antes de substituir uma coleção existente.
 
-A visão geral mostra totais da coleção, shinies, IVs perfeitos, espécies distintas e um radar que cruza desejos com encontros do guia. O cruzamento usa a espécie e as condições shiny/sombroso/Mega; não confirma IV perfeito, condição sortuda, purificação ou uma forma regional específica. Formas alternativas continuam compartilhando o número da espécie na coleção; o nome do objetivo fica na anotação quando adicionado pelo guia.
+A visão geral mostra totais da coleção, shinies, IVs perfeitos, espécies distintas e um radar que cruza desejos com encontros do guia. O cruzamento distingue a forma normal de Alola e respeita as condições shiny/sombroso/Mega; não confirma IV perfeito, condição sortuda ou purificação. As formas compartilham o número da espécie na Pokédex, mas cada exemplar tem sua própria identidade, notas e IVs. Outras formas regionais ainda não têm cadastro específico.
 
 ## Guia de capturas
 
@@ -118,8 +119,8 @@ CP = máximo(10, piso((Ataque + IV) × raiz(Defesa + IV) × raiz(PS + IV) × mul
 - A tabela existente de atributos e multiplicadores do Pokémon GO, baseada em [PokeMiners/game_masters](https://github.com/PokeMiners/game_masters), fica embutida em `collection.js`. Não depende de internet para as espécies contempladas e não é atualizada automaticamente.
 - Para espécies ausentes da tabela, há conversão de atributos da PokéAPI, que pode produzir resultado aproximado.
 - Se vários níveis gerarem o mesmo CP, aparece uma faixa. `~` indica aproximação; **Não confere** indica que CP e IV não combinaram com a conta.
-- **Não calcula nível de Mega.** Formas regionais e alternativas usam os atributos da forma padrão, podendo gerar aproximações ou nenhum resultado.
-- Na coleção, shiny usa a arte shiny da PokéAPI quando disponível; outras variantes usam arte normal e identificação visual. Formas regionais e alternativas usam a arte da espécie padrão. As imagens do guia preservam as fornecidas por Leek Duck.
+- **Não calcula nível de Mega.** As formas de Alola usam atributos próprios do Pokémon GO, incorporados em `pokemon-forms.js` a partir da [PoGoAPI](https://pogoapi.net/api/v1/pokemon_stats.json), conferidos em 07/10/2026. Outras formas alternativas ainda não têm atributos específicos.
+- Na coleção, as formas normal e de Alola usam sua respectiva arte normal/shiny da PokéAPI. Se a arte shiny não carregar, o fallback mantém a mesma forma regional. Outras variantes usam arte normal e identificação visual. As imagens do guia preservam as fornecidas por Leek Duck.
 
 ## Armazenamento e compatibilidade
 
@@ -132,7 +133,7 @@ A coleção continua na chave `pgo`, mantendo o formato anterior:
 }
 ```
 
-Cada registro mantém `uid`, `id` (número da Pokédex), `name`, `cp`, `note`, `iv`, as tags booleanas e, quando presente, `evolvedFrom`. Não é necessário migrar um backup válido da versão anterior. Ao publicar no **mesmo domínio/origem e navegador**, os registros existentes continuam disponíveis.
+Cada registro mantém `uid`, `id` (número da Pokédex), `name`, `cp`, `note`, `iv`, as tags booleanas e, quando presente, `evolvedFrom`. O campo `form` distingue `normal` e `alola`. Backups anteriores continuam válidos: nomes explicitamente de Alola e seus IDs de variedade são reconhecidos; registros ambíguos mantêm a forma normal e podem ser corrigidos em Editar. Identificadores ausentes ou duplicados são reparados sem combinar os exemplares. Ao publicar no **mesmo domínio/origem e navegador**, os registros existentes continuam disponíveis.
 
 | Chave no `localStorage` | Conteúdo                                                   |
 | ----------------------- | ---------------------------------------------------------- |
@@ -173,6 +174,7 @@ index.html          Estrutura e navegação
 styles.css          Redesign e layout responsivo
 legacy.css          Estilos da coleção e dos diálogos existentes
 collection.js       Coleção, backups, evoluções e cálculos
+pokemon-forms.js    Formas de Alola, aliases, sprites, atributos GO e evoluções
 companion-data.js   Consulta, normalização e cache dos feeds
 companion-rules.js  Regras do radar e identificação de mudanças de rotação
 app.js              Integração da interface, guias e radar

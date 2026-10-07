@@ -1,6 +1,7 @@
 (function () {
   "use strict";
   const $ = (id) => document.getElementById(id);
+  const forms = window.PokemonForms;
   const ART =
     "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/";
   const FLAGS = {
@@ -18,6 +19,18 @@
     sortKey = "add",
     recoveryRequired = false,
     storageWarning = false;
+  let uidSequence = 0;
+  const copyEntry = (e) => ({ ...e, iv: e.iv ? e.iv.slice() : null });
+  function newUid(
+    used = new Set([...data.have, ...data.want].map((e) => String(e.uid))),
+  ) {
+    let uid;
+    do {
+      uid =
+        "pgo-" + Date.now().toString(36) + "-" + (++uidSequence).toString(36);
+    } while (used.has(uid));
+    return uid;
+  }
 
   function normalizeCollection(value) {
     if (!value || !Array.isArray(value.have) || !Array.isArray(value.want))
@@ -25,12 +38,13 @@
     const seen = new Set();
     const clean = (list) =>
       list.map((e) => {
+        const regional = forms.forEntry(e);
         if (
           !e ||
           typeof e !== "object" ||
           !Number.isInteger(e.id) ||
           e.id < 1 ||
-          e.id > 1025 ||
+          (e.id > 1025 && !regional) ||
           typeof e.name !== "string" ||
           !e.name.trim()
         )
@@ -51,13 +65,19 @@
         )
           throw new Error("O backup contém CP inválido.");
         let uid = e.uid;
-        if (!["number", "string"].includes(typeof uid) || seen.has(uid))
-          uid = Date.now() + Math.random();
-        seen.add(uid);
+        if (
+          !["number", "string"].includes(typeof uid) ||
+          !String(uid).trim() ||
+          (typeof uid === "number" && !Number.isFinite(uid)) ||
+          seen.has(String(uid))
+        )
+          uid = newUid(seen);
+        seen.add(String(uid));
         const entry = {
           uid,
-          id: e.id,
-          name: e.name.trim().slice(0, 140),
+          id: regional?.id || e.id,
+          name: regional?.name || e.name.trim().slice(0, 140),
+          form: regional ? "alola" : "normal",
           cp,
           note: typeof e.note === "string" ? e.note.slice(0, 2000) : "",
           iv: e.iv ? e.iv.slice() : null,
@@ -140,21 +160,55 @@
           "Sem internet para carregar os nomes. Você ainda pode usar o número da Pokédex.";
       }
     }
-    $("names").innerHTML = Object.keys(dex)
-      .map((n) => `<option value="${n}">`)
-      .join("");
+    $("names").replaceChildren();
+    [...Object.keys(dex), ...forms.catalog.map((p) => p.label)].forEach(
+      (name) => {
+        const option = document.createElement("option");
+        option.value = name;
+        $("names").append(option);
+      },
+    );
     document.dispatchEvent(new CustomEvent("pgo-dex-ready"));
   }
 
   function resolve(txt) {
+    const regional = forms.resolve(txt);
+    if (regional)
+      return {
+        id: regional.id,
+        name: regional.name,
+        form: "alola",
+        spriteId: regional.spriteId,
+      };
     const t = txt.trim().toLowerCase().replace(/\s+/g, "-");
     if (/^\d+$/.test(t)) {
       const id = +t;
       return id > 0 && id <= 1025
-        ? { id, name: Object.keys(dex).find((k) => dex[k] === id) || "#" + id }
+        ? {
+            id,
+            name:
+              Object.keys(dex).find((k) => dex[k] === id) ||
+              forms.get(id)?.name ||
+              "#" + id,
+          }
         : null;
     }
-    return dex[t] ? { id: dex[t], name: t } : null;
+    const id = dex[t] || forms.catalog.find((p) => p.name === t)?.id;
+    return id ? { id, name: t } : null;
+  }
+
+  function selectedPokemon() {
+    const p = resolve($("name").value);
+    if (!p) return null;
+    return {
+      ...p,
+      form: forms.get(p.id) ? $("form").value || p.form || "normal" : "normal",
+    };
+  }
+  function syncAddForm() {
+    const p = resolve($("name").value);
+    $("form").disabled = !p || !forms.get(p.id);
+    $("form").value = p?.form || "normal";
   }
 
   function add(list) {
@@ -163,7 +217,7 @@
         "Exporte os dados originais e importe um backup válido na tela Minha coleção antes de adicionar Pokémon.";
       return;
     }
-    const p = resolve($("name").value);
+    const p = selectedPokemon();
     if (!p) {
       $("msg").textContent =
         "Não encontrei esse Pokémon. Use o nome em inglês ou o número da Pokédex.";
@@ -178,9 +232,10 @@
     if (!validCP("cp", "msg")) return;
     $("msg").textContent = "";
     const e = {
-      uid: Date.now() + Math.random(),
+      uid: newUid(),
       id: p.id,
       name: p.name,
+      form: p.form,
       cp: $("cp").value,
       note: $("note").value.trim(),
       iv,
@@ -191,6 +246,7 @@
     data[list].push(e);
     save();
     ["name", "cp", "note", "iA", "iD", "iS"].forEach((i) => ($(i).value = ""));
+    syncAddForm();
     Object.keys(FLAGS).forEach((f) => ($(f).checked = false));
     showIV("iA", "iD", "iS", "ivRes");
     upd();
@@ -198,16 +254,17 @@
     render();
     if ($("dAdd").open) $("dAdd").close();
     document.dispatchEvent(
-      new CustomEvent("pgo-added", { detail: { list, name: p.name } }),
+      new CustomEvent("pgo-added", { detail: { list, name: forms.label(p) } }),
     );
   }
 
   function pic(e) {
     const img = document.createElement("img");
-    img.alt = e.name;
+    img.alt = forms.label(e);
     img.loading = "lazy";
-    const normal = ART + e.id + ".png";
-    img.src = e.shiny ? ART + "shiny/" + e.id + ".png" : normal;
+    const spriteId = forms.forEntry(e)?.spriteId || e.id;
+    const normal = ART + spriteId + ".png";
+    img.src = e.shiny ? ART + "shiny/" + spriteId + ".png" : normal;
     img.onerror = () => {
       if (img.src !== normal) img.src = normal;
       else img.replaceWith(document.createTextNode("?"));
@@ -276,7 +333,7 @@
     const items = data[tab].filter(
       (e) =>
         (!q ||
-          e.name.toLowerCase().includes(q) ||
+          forms.label(e).toLowerCase().includes(q) ||
           String(e.id) === q.replace("#", "")) &&
         (flt === "all" || e[flt]),
     );
@@ -287,7 +344,7 @@
       cpa: (a, b) => (cpOf(a) ?? big) - (cpOf(b) ?? big),
       ivd: (a, b) => (ivp(b) ?? -1) - (ivp(a) ?? -1),
       iva: (a, b) => (ivp(a) ?? big) - (ivp(b) ?? big),
-      name: (a, b) => a.name.localeCompare(b.name),
+      name: (a, b) => forms.label(a).localeCompare(forms.label(b)),
       dex: (a, b) => a.id - b.id,
     }[so];
     if (so === "recent") items.reverse();
@@ -329,7 +386,7 @@
       c.innerHTML = `<div class="cp">${e.cp ? "CP <b>" + (+e.cp | 0) + "</b>" + (lt ? '<span class="lv">Nível <b>' + lt + "</b></span>" : "") : ""}</div><div class="pic"></div><div class="badges">${on.map((f) => `<span class="b ${f}">${FLAGS[f]}</span>`).join("")}</div><div class="nm"></div><div class="from"></div><div class="iv"></div><div class="nt"></div><div class="acts"></div>`;
       c.querySelector(".pic").append(pic(e));
       const nm = c.querySelector(".nm");
-      nm.textContent = e.name + " ";
+      nm.textContent = forms.label(e) + " ";
       const id = document.createElement("span");
       id.className = "id";
       id.textContent = "#" + e.id;
@@ -355,13 +412,15 @@
       };
       if (tab === "want")
         mk("Peguei!", () => {
+          const wanted = data.want.find((x) => x.uid === e.uid);
+          if (!wanted) return;
           data.want = data.want.filter((x) => x.uid !== e.uid);
-          data.have.push(e);
+          data.have.push(copyEntry(wanted));
           save();
           render();
         });
       else {
-        const ev = evoCache[e.id];
+        const ev = forms.evolutionNames(e) ?? evoCache[e.id];
         if ((ev && ev.length) || (!ev && evoFail.has(e.id)))
           mk("Evoluir", () => openEvo(e));
       }
@@ -400,9 +459,9 @@
     ].filter((id) => !statsOf(id) && !statsFail.has(id));
     if (need.length) Promise.all(need.map(getStats)).then(render);
     if (tab === "have") {
-      const miss = [...new Set(items.map((e) => e.id))].filter(
-        (id) => !evoCache[id] && !evoFail.has(id),
-      );
+      const miss = [
+        ...new Set(items.filter((e) => !forms.forEntry(e)).map((e) => e.id)),
+      ].filter((id) => !evoCache[id] && !evoFail.has(id));
       if (miss.length) Promise.all(miss.map(getEvos)).then(render);
     }
   }
@@ -483,12 +542,12 @@
   };
   function levelText(e) {
     const cp = +e.cp,
-      st = statsOf(e.id);
+      st = forms.forEntry(e)?.stats || statsOf(e.id);
     if (e.mega || !e.iv || !cp || !st) return "";
     const r = calcLevel(st, e.iv, cp);
     return r ? fmtLv(r) : "";
   }
-  async function updateLv(out, id, cpId, ivIds, mega) {
+  async function updateLv(out, id, cpId, ivIds, mega, form = "normal") {
     const el = $(out),
       tok = (el._t = (el._t || 0) + 1);
     const set = (t, dim) => {
@@ -502,7 +561,7 @@
       set("—", true);
       return;
     }
-    const st = await getStats(id);
+    const st = forms.get(id, form)?.stats || (await getStats(id));
     if (!st) {
       set("—", true);
       return;
@@ -562,10 +621,19 @@
       return null;
     }
   }
-  let cur = null;
+  let cur = null,
+    editTarget = null,
+    evoTarget = null;
+  const targetFor = (e) => ({
+    list: data.have.includes(e) ? "have" : "want",
+    uid: e.uid,
+  });
   function openEdit(e) {
-    cur = e;
-    $("eTitle").textContent = "Editar " + e.name;
+    cur = copyEntry(e);
+    editTarget = targetFor(e);
+    $("eTitle").textContent = "Editar " + forms.label(e);
+    $("eForm").disabled = !forms.get(e.id);
+    $("eForm").value = forms.forEntry(e) ? "alola" : "normal";
     const box = $("eFlags");
     box.innerHTML = "";
     Object.keys(FLAGS).forEach((f) => {
@@ -589,36 +657,50 @@
     $("dEdit").showModal();
   }
   $("eSave").onclick = () => {
+    if (!editTarget) return;
+    const index = data[editTarget.list].findIndex(
+      (e) => e.uid === editTarget.uid,
+    );
+    if (index < 0) return;
     const iv = readIV("eA", "eD", "eS");
     if (iv === false) {
       $("eMsg").textContent = "Preencha os três IVs ou deixe todos vazios.";
       return;
     }
     if (!validCP("eCp", "eMsg")) return;
-    cur.iv = iv;
+    const next = { ...data[editTarget.list][index], iv };
     document
       .querySelectorAll("#eFlags input")
-      .forEach((i) => (cur[i.dataset.f] = i.checked));
-    if (iv && iv.every((x) => x === 15)) cur.hundo = true;
-    if (cur.hundo && !cur.iv) cur.iv = [15, 15, 15];
-    cur.cp = $("eCp").value;
-    cur.note = $("eNote").value.trim();
+      .forEach((i) => (next[i.dataset.f] = i.checked));
+    if (iv && iv.every((x) => x === 15)) next.hundo = true;
+    if (next.hundo && !next.iv) next.iv = [15, 15, 15];
+    next.cp = $("eCp").value;
+    next.note = $("eNote").value.trim();
+    next.form =
+      forms.get(next.id) && $("eForm").value === "alola" ? "alola" : "normal";
+    if (forms.get(next.id)) next.name = forms.get(next.id).name;
+    data[editTarget.list][index] = next;
+    editTarget = null;
     save();
     $("dEdit").close();
     render();
   };
-  $("eCancel").onclick = () => $("dEdit").close();
+  $("eCancel").onclick = () => {
+    editTarget = null;
+    $("dEdit").close();
+  };
 
   async function openEvo(e) {
-    cur = e;
-    $("vTitle").textContent = "Evoluir " + e.name;
+    const target = (evoTarget = targetFor(e));
+    $("vTitle").textContent = "Evoluir " + forms.label(e);
     $("vName").value = "";
     $("vCp").value = "";
     $("vMsg").textContent = "";
     const box = $("vOpts");
     box.innerHTML = '<span class="hint">Buscando evoluções…</span>';
     $("dEvo").showModal();
-    const list = (await getEvos(e.id)) || [];
+    const list = forms.evolutionNames(e) ?? ((await getEvos(e.id)) || []);
+    if (evoTarget !== target || !$("dEvo").open) return;
     box.innerHTML = "";
     if (!list.length) {
       box.innerHTML =
@@ -628,7 +710,7 @@
     list.forEach((n) => {
       const b = document.createElement("button");
       b.className = "evo";
-      b.textContent = n;
+      b.textContent = forms.resolve(n)?.label || n;
       b.onclick = () => {
         $("vName").value = n;
         box
@@ -639,21 +721,35 @@
     });
   }
   $("vOk").onclick = () => {
+    if (!evoTarget) return;
+    const index = data[evoTarget.list].findIndex(
+      (e) => e.uid === evoTarget.uid,
+    );
+    if (index < 0) return;
     const p = resolve($("vName").value);
     if (!p) {
       $("vMsg").textContent = "Escolha uma evolução ou digite um nome válido.";
       return;
     }
     if (!validCP("vCp", "vMsg")) return;
-    cur.evolvedFrom = cur.name;
-    cur.id = p.id;
-    cur.name = p.name;
-    cur.cp = $("vCp").value;
+    const previous = data[evoTarget.list][index];
+    data[evoTarget.list][index] = {
+      ...copyEntry(previous),
+      evolvedFrom: forms.label(previous),
+      id: p.id,
+      name: p.name,
+      form: p.form || "normal",
+      cp: $("vCp").value,
+    };
+    evoTarget = null;
     save();
     $("dEvo").close();
     render();
   };
-  $("vCancel").onclick = () => $("dEvo").close();
+  $("vCancel").onclick = () => {
+    evoTarget = null;
+    $("dEvo").close();
+  };
 
   $("addHave").onclick = () => add("have");
   $("addWant").onclick = () => add("want");
@@ -669,9 +765,18 @@
       }),
   );
   const upd = () => {
-    const p = resolve($("name").value);
-    updateLv("lvRes", p && p.id, "cp", ["iA", "iD", "iS"], $("mega").checked);
+    const p = selectedPokemon();
+    updateLv(
+      "lvRes",
+      p && p.id,
+      "cp",
+      ["iA", "iD", "iS"],
+      $("mega").checked,
+      p?.form,
+    );
   };
+  $("name").addEventListener("input", syncAddForm);
+  $("form").addEventListener("change", upd);
   ["name", "cp", "iA", "iD", "iS"].forEach((i) =>
     $(i).addEventListener("input", upd),
   );
@@ -679,7 +784,15 @@
   const eMega = () =>
     document.querySelector("#eFlags input[data-f=mega]").checked;
   const eUpd = () =>
-    updateLv("eLv", cur && cur.id, "eCp", ["eA", "eD", "eS"], eMega());
+    updateLv(
+      "eLv",
+      cur && cur.id,
+      "eCp",
+      ["eA", "eD", "eS"],
+      eMega(),
+      $("eForm").value,
+    );
+  $("eForm").addEventListener("change", eUpd);
   ["eCp", "eA", "eD", "eS"].forEach((i) =>
     $(i).addEventListener("input", eUpd),
   );
@@ -811,7 +924,10 @@
   };
   window.Collection = {
     resolveName: resolve,
-    getData: () => data,
+    getData: () => ({
+      have: data.have.map(copyEntry),
+      want: data.want.map(copyEntry),
+    }),
     getStorageStatus: () => ({
       blocked: recoveryRequired,
       warning: storageWarning,
@@ -846,6 +962,7 @@
         data.want.some(
           (e) =>
             e.id === pokemon.dexId &&
+            forms.sameForm(e, pokemon) &&
             !!e.shiny === shiny &&
             !!e.shadow === !!pokemon.shadow &&
             !!e.mega === mega,
@@ -853,11 +970,13 @@
       )
         return false;
       const entry = {
-        uid: Date.now() + Math.random(),
+        uid: newUid(),
         id: pokemon.dexId,
         name:
+          forms.forEntry(pokemon)?.name ||
           Object.keys(dex).find((k) => dex[k] === pokemon.dexId) ||
           pokemon.name.toLowerCase(),
+        form: forms.forEntry(pokemon) ? "alola" : "normal",
         cp: "",
         note: "Objetivo: " + pokemon.name,
         iv: null,

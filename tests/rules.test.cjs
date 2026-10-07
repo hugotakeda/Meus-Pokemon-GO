@@ -5,6 +5,21 @@ const snapshot = (rocket, status = "network") => ({
   rocket,
   sources: { rocket: { status } },
 });
+test("radar distinguishes a Golem wish from its Alolan form in either direction", () => {
+  const normal = { dexId: 76, name: "Golem", canBeShiny: true };
+  const alola = { dexId: 76, name: "Alolan Golem", canBeShiny: true };
+  assert.equal(matchesWish({ id: 76, form: "alola" }, normal), false);
+  assert.equal(matchesWish({ id: 76, form: "alola" }, alola), true);
+  assert.equal(matchesWish({ id: 76, form: "normal" }, normal), true);
+  assert.equal(matchesWish({ id: 76, form: "normal" }, alola), false);
+  assert.equal(
+    matchesWish(
+      { id: 76, form: "alola", shiny: true },
+      { ...alola, canBeShiny: false },
+    ),
+    false,
+  );
+});
 test("rotation alerts detect changed Rocket encounters even with stable leader IDs", () => {
   const before = snapshot([
     { id: "arlo", name: "Arlo", slots: [[{ name: "Bagon" }], [], []] },

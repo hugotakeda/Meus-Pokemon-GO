@@ -433,6 +433,13 @@
           </div>
         </div>
         <div class="fr">
+          <div class="fld grow">
+            <label for="form">Forma</label>
+            <select id="form" disabled>
+              <option value="normal">Normal</option>
+              <option value="alola">Alola</option>
+            </select>
+          </div>
           <div class="fld ivf">
             <label for="iA">IV Ataque</label
             ><input
@@ -523,6 +530,13 @@
       <span class="lab">Variantes</span>
       <div class="row" id="eFlags"></div>
       <div class="fr">
+        <div class="fld grow">
+          <label for="eForm">Forma</label>
+          <select id="eForm">
+            <option value="normal">Normal</option>
+            <option value="alola">Alola</option>
+          </select>
+        </div>
         <div class="fld cpf">
           <label for="eCp">CP</label><input id="eCp" type="number" min="10" />
         </div>
@@ -599,6 +613,7 @@
     <script src="vendor/qrcode.js"></script>
     <script src="trainer.js"></script>
     <script src="companion-data.js"></script>
+    <script src="pokemon-forms.js"></script>
     <script src="companion-rules.js"></script>
     <script src="collection.js"></script>
     <script src="brazil-event-scope.js"></script>

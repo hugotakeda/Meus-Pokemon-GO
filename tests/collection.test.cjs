@@ -210,6 +210,7 @@ function createApp(saved = { have: [], want: [] }, options = {}) {
     navigator: {},
     location: { hash: "" },
     TrainerCompanion: options.companion,
+    PokemonForms: require("../pokemon-forms.js"),
   });
   context.window = context;
   context.globalThis = context;
@@ -411,7 +412,7 @@ test("catching a wanted Pokémon preserves identity, IVs, variants and notes", (
   assert.equal(backup.want.length, 0);
 });
 
-test("evolving changes species and CP while retaining collection metadata", () => {
+test("evolving changes species and CP while retaining collection metadata", async () => {
   const original = {
     uid: 73,
     id: 25,
@@ -423,7 +424,7 @@ test("evolving changes species and CP while retaining collection metadata", () =
     note: "Favorito",
   };
   const app = createApp({ have: [original], want: [] });
-  app.evaluate("cur = data.have[0]");
+  await app.evaluate("openEvo(data.have[0])");
   app.get("vName").value = "raichu";
   app.get("vCp").value = "1000";
   app.get("vOk").click();
@@ -452,11 +453,9 @@ test("old backup format imports and applies Hundo migration", async () => {
     ],
     want: [],
   };
-  await app
-    .get("file")
-    .onchange({
-      target: { files: [{ text: async () => JSON.stringify(backup) }] },
-    });
+  await app.get("file").onchange({
+    target: { files: [{ text: async () => JSON.stringify(backup) }] },
+  });
   assert.equal(app.evaluate("data.have[0].uid"), 5);
   assert.deepEqual(app.json("data.have[0].iv"), [15, 15, 15]);
   assert.equal(app.evaluate("levelText(data.have[0])"), "40");
@@ -482,11 +481,9 @@ test("invalid backup rows cannot replace or persist over the existing collection
   ];
   for (const invalid of invalidRows) {
     const backup = { have: [...original.have, invalid], want: [] };
-    await app
-      .get("file")
-      .onchange({
-        target: { files: [{ text: async () => JSON.stringify(backup) }] },
-      });
+    await app.get("file").onchange({
+      target: { files: [{ text: async () => JSON.stringify(backup) }] },
+    });
     assert.deepEqual(app.json("data"), before);
     assert.equal(app.store.get("pgo"), storedBefore);
   }
@@ -536,11 +533,9 @@ test("only a validated recovery import unlocks writes and subsequent additions r
   const raw = "{corrupt original";
   const app = createApp(undefined, { rawSaved: raw });
   const importBackup = (value) =>
-    app
-      .get("file")
-      .onchange({
-        target: { files: [{ text: async () => JSON.stringify(value) }] },
-      });
+    app.get("file").onchange({
+      target: { files: [{ text: async () => JSON.stringify(value) }] },
+    });
   await importBackup({ have: [null], want: [] });
   assert.equal(app.evaluate("recoveryRequired"), true);
   assert.equal(app.store.get("pgo"), raw);
@@ -563,13 +558,11 @@ test("only a validated recovery import unlocks writes and subsequent additions r
 test("cancelling recovery import keeps the original data and write guard intact", async () => {
   const raw = "{corrupt original";
   const app = createApp(undefined, { rawSaved: raw, confirm: false });
-  await app
-    .get("file")
-    .onchange({
-      target: {
-        files: [{ text: async () => JSON.stringify({ have: [], want: [] }) }],
-      },
-    });
+  await app.get("file").onchange({
+    target: {
+      files: [{ text: async () => JSON.stringify({ have: [], want: [] }) }],
+    },
+  });
   assert.equal(app.evaluate("recoveryRequired"), true);
   assert.equal(app.store.get("pgo"), raw);
 });
@@ -620,11 +613,9 @@ test("a rejected companion restore cannot release the recovery guard or overwrit
     want: [],
     companion: { invalid: true },
   };
-  await app
-    .get("file")
-    .onchange({
-      target: { files: [{ text: async () => JSON.stringify(backup) }] },
-    });
+  await app.get("file").onchange({
+    target: { files: [{ text: async () => JSON.stringify(backup) }] },
+  });
   assert.equal(restoreCalls, 1);
   assert.equal(app.evaluate("recoveryRequired"), true);
   assert.equal(app.store.get("pgo"), raw);
@@ -711,7 +702,7 @@ test("the redesigned page retains each required collection control without dupli
     "duplicate HTML IDs can route actions to the wrong control",
   );
   const required = new Set(
-    [...script.matchAll(/\$\('([^']+)'\)/g)].map((match) => match[1]),
+    [...script.matchAll(/\$\(["']([^"']+)["']\)/g)].map((match) => match[1]),
   );
   for (const id of [
     "iA",
@@ -737,4 +728,201 @@ test("the redesigned page retains each required collection control without dupli
     "only collection list switches should use the legacy .tab class",
   );
   assert.ok(tabTags.every((tag) => /data-t="(?:have|want)"/.test(tag)));
+});
+
+test("two Golem forms render separately and editing one note leaves the other unchanged after reload", () => {
+  const app = createApp();
+  for (const [name, note] of [
+    ["golem", "Kanto"],
+    ["Golem de Alola", "Alola"],
+  ]) {
+    app.get("name").value = name;
+    app.get("name").dispatch("input");
+    app.get("note").value = note;
+    app.get("addHave").click();
+  }
+  const cards = app.get("grid").children;
+  assert.match(cards[0].querySelector(".pic").children[0].src, /\/76\.png$/);
+  assert.match(cards[1].querySelector(".pic").children[0].src, /\/10111\.png$/);
+  assert.equal(cards[1].querySelector(".nm").textContent, "Golem de Alola ");
+  app.evaluate("openEdit(data.have[1])");
+  app.get("eNote").value = "Só este Golem";
+  app.get("eSave").click();
+  assert.deepEqual(app.json("data.have.map(e=>e.note)"), [
+    "Kanto",
+    "Só este Golem",
+  ]);
+  const reloaded = createApp(JSON.parse(app.store.get("pgo")));
+  assert.deepEqual(reloaded.json("data.have.map(e=>e.note)"), [
+    "Kanto",
+    "Só este Golem",
+  ]);
+  assert.deepEqual(reloaded.json("data.have.map(e=>e.form)"), [
+    "normal",
+    "alola",
+  ]);
+  app.get("q").value = "alola";
+  app.get("q").dispatch("input");
+  assert.equal(app.get("grid").children.length, 1);
+});
+
+test("existing base Golem can be corrected to Alola without losing specimen metadata and can be restored", () => {
+  const original = {
+    uid: 76,
+    id: 76,
+    name: "golem",
+    cp: "2000",
+    iv: [10, 11, 12],
+    note: "Meu Golem",
+    shiny: true,
+    lucky: true,
+  };
+  const app = createApp({ have: [original], want: [] });
+  app.evaluate("openEdit(data.have[0])");
+  app.get("eForm").value = "alola";
+  app.get("eSave").click();
+  const changed = app.json("data.have[0]");
+  for (const [key, value] of Object.entries(original))
+    assert.deepEqual(changed[key], value, key);
+  assert.equal(changed.form, "alola");
+  assert.match(
+    app.get("grid").children[0].querySelector(".pic").children[0].src,
+    /shiny\/10111\.png$/,
+  );
+  app.evaluate("openEdit(data.have[0])");
+  app.get("eForm").value = "normal";
+  app.get("eSave").click();
+  assert.match(
+    app.get("grid").children[0].querySelector(".pic").children[0].src,
+    /shiny\/76\.png$/,
+  );
+});
+
+test("rapid additions have unique identities even with a fixed clock and random source", () => {
+  const app = createApp();
+  app.evaluate("Date.now=()=>42; Math.random=()=>0.5");
+  for (let i = 0; i < 20; i++) {
+    app.get("name").value = "76";
+    app.get("addHave").click();
+  }
+  assert.equal(app.evaluate("new Set(data.have.map(e=>e.uid)).size"), 20);
+  app.evaluate("openEdit(data.have[0])");
+  app.get("eNote").value = "Primeiro exemplar";
+  app.get("eSave").click();
+  assert.equal(app.evaluate("data.have.filter(e=>e.note).length"), 1);
+});
+
+test("a stale catch action cannot duplicate a specimen or leave an editable shared reference", () => {
+  const app = createApp({
+    have: [],
+    want: [
+      {
+        uid: 77,
+        id: 76,
+        name: "golem",
+        form: "alola",
+        note: "Original",
+        iv: [1, 2, 3],
+      },
+    ],
+  });
+  app.evaluate("tab='want'; render()");
+  const card = app.get("grid").children[0];
+  const catchButton = card
+    .querySelector(".acts")
+    .children.find((b) => b.textContent === "Peguei!");
+  catchButton.click();
+  catchButton.click();
+  assert.equal(app.evaluate("data.have.length"), 1);
+  assert.equal(app.evaluate("data.want.length"), 0);
+  app.evaluate(
+    "const snapshot=Collection.getData(); snapshot.have[0].note='Alterado fora'; snapshot.have[0].iv[0]=15",
+  );
+  assert.equal(app.evaluate("data.have[0].note"), "Original");
+  assert.deepEqual(app.json("data.have[0].iv"), [1, 2, 3]);
+});
+
+test("backup export and import preserve forms and repair duplicate IDs without joining notes", async () => {
+  const app = createApp({
+    have: [
+      { uid: 7, id: 76, name: "golem", note: "Kanto" },
+      { uid: "7", id: 10111, name: "golem-alola", note: "Alola" },
+    ],
+    want: [],
+  });
+  assert.notEqual(
+    app.evaluate("String(data.have[0].uid)"),
+    app.evaluate("String(data.have[1].uid)"),
+  );
+  assert.equal(app.evaluate("data.have[1].id"), 76);
+  assert.equal(app.evaluate("data.have[1].form"), "alola");
+  app.get("exp").click();
+  const exported = JSON.parse(await app.downloads[0].text());
+  const imported = createApp();
+  await imported
+    .get("file")
+    .onchange({
+      target: { files: [{ text: async () => JSON.stringify(exported) }] },
+    });
+  assert.deepEqual(imported.json("data.have.map(e=>[e.form,e.note])"), [
+    ["normal", "Kanto"],
+    ["alola", "Alola"],
+  ]);
+  imported.evaluate("openEdit(data.have[1])");
+  imported.get("eNote").value = "Independente";
+  imported.get("eSave").click();
+  assert.equal(imported.evaluate("data.have[0].note"), "Kanto");
+});
+
+test("regional wishes and evolution retain form, notes and artwork through capture", async () => {
+  const app = createApp();
+  assert.equal(
+    app.evaluate("Collection.addWanted({dexId:74,name:'Geodude'})"),
+    true,
+  );
+  assert.equal(
+    app.evaluate("Collection.addWanted({dexId:74,name:'Alolan Geodude'})"),
+    true,
+  );
+  assert.equal(
+    app.evaluate("Collection.addWanted({dexId:74,name:'Geodude de Alola'})"),
+    false,
+  );
+  app.evaluate("tab='want'; render()");
+  app
+    .get("grid")
+    .children[1].querySelector(".acts")
+    .children.find((b) => b.textContent === "Peguei!")
+    .click();
+  await app.evaluate("openEvo(data.have[0])");
+  assert.equal(app.get("vOpts").children[0].textContent, "Graveler de Alola");
+  app.get("vOpts").children[0].click();
+  app.get("vOk").click();
+  assert.equal(app.evaluate("data.have[0].id"), 75);
+  assert.equal(app.evaluate("data.have[0].form"), "alola");
+  assert.equal(app.evaluate("data.have[0].note"), "Objetivo: Alolan Geodude");
+  assert.equal(app.evaluate("data.have[0].evolvedFrom"), "Geodude de Alola");
+});
+
+test("Alolan Raticate level estimation uses its own GO stats instead of Kanto's", async () => {
+  const app = createApp();
+  // Alolan Raticate 15/15/15 at level 40 has 1705 CP.
+  assert.equal(
+    app.evaluate(
+      "levelText({id:20,name:'raticate',form:'alola',cp:1705,iv:[15,15,15]})",
+    ),
+    "40",
+  );
+  assert.notEqual(
+    app.evaluate(
+      "levelText({id:20,name:'raticate',form:'normal',cp:1705,iv:[15,15,15]})",
+    ),
+    "40",
+  );
+  for (const id of ["iA", "iD", "iS"]) app.get(id).value = "15";
+  app.get("cp").value = "1705";
+  await app.evaluate(
+    "updateLv('lvRes',20,'cp',['iA','iD','iS'],false,'alola')",
+  );
+  assert.equal(app.get("lvRes").textContent, "40");
 });

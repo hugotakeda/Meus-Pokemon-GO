@@ -471,6 +471,7 @@
     return Collection.getData().want.some(
       (w) =>
         w.id === p.dexId &&
+        PokemonForms.sameForm(w, p) &&
         !!w.shiny === shiny &&
         !!w.shadow === !!p.shadow &&
         !!w.mega === /\bmega\b/i.test(p.name || ""),
