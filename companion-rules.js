@@ -1,12 +1,17 @@
 (function (root, factory) {
-  const api = factory();
+  const api = factory(
+    typeof module === "object" && module.exports
+      ? require("./pokemon-forms.js")
+      : root.PokemonForms,
+  );
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.CompanionRules = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (forms) {
   "use strict";
   function matchesWish(w, p) {
     return (
       w.id === p.dexId &&
+      forms.sameForm(w, p) &&
       (!w.shiny || p.canBeShiny === true) &&
       (!w.shadow || p.shadow === true) &&
       (!w.mega || /\bmega\b/i.test(p.name || ""))

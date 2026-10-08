@@ -98,7 +98,7 @@
         name,
         image: known
           ? "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/" +
-            known.id +
+            (known.spriteId || known.id) +
             ".png"
           : "",
         illustration: true,
