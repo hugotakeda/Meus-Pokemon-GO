@@ -1151,7 +1151,7 @@ test("evolving keeps the Alola form when the evolution has one", async () => {
   assert.equal(evolved.form, "alola");
 });
 
-test("evolving into a species without an Alolan form drops the form", async () => {
+test("evolving cannot change a specimen into an unrelated species", async () => {
   const app = createApp({
     have: [
       {
@@ -1169,7 +1169,9 @@ test("evolving into a species without an Alolan form drops the form", async () =
   await app.evaluate("openEvo(data.have[0])");
   app.get("vName").value = "magikarp";
   app.get("vOk").click();
-  assert.equal(JSON.parse(app.store.get("pgo")).have[0].form, "normal");
+  assert.equal(JSON.parse(app.store.get("pgo")).have[0].form, "alola");
+  assert.equal(JSON.parse(app.store.get("pgo")).have[0].id, 19);
+  assert.match(app.get("vMsg").textContent, /uma das evoluções/);
 });
 
 test("guide goals named Alolan become Alola wishes and stay separate from the normal form", () => {
@@ -1284,4 +1286,23 @@ test("selected folders filter cards and new additions, old backups remain compat
   assert.match(app.get("folderMsg").textContent, /único/);
   const cleaned = app.json("normalizeCollection({have:[{uid:1,id:25,name:'pikachu',folders:['missing']}],want:[]})");
   assert.deepEqual(cleaned.have[0].folders, []);
+});
+
+test("evolution search only appears for more than three choices and lists only those choices", async () => {
+ const app=createApp({have:[{uid:1,id:25,name:'pikachu'}],want:[]});
+ await app.evaluate('openEvo(data.have[0])');
+ assert.equal(app.get('vSearchRow').hidden,true);
+ assert.equal(app.get('vOpts').children.length,1);
+ app.get('vOpts').children[0].click();
+ app.get('vOk').click();
+ assert.equal(app.evaluate('data.have[0].id'),26);
+ app.evaluate("evoCache[26]=['pikachu','raichu','vulpix','magikarp']");
+ await app.evaluate('openEvo(data.have[0])');
+ assert.equal(app.get('vSearchRow').hidden,false);
+ assert.equal(app.get('vNames').children.length,4);
+ app.get('vCancel').click();
+ app.evaluate('evoCache[26]=[]');
+ await app.evaluate('openEvo(data.have[0])');
+ assert.equal(app.get('vSearchRow').hidden,true);
+ assert.equal(app.get('vOk').disabled,true);
 });

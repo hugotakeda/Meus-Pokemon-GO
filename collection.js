@@ -730,7 +730,8 @@
   }
   let cur = null,
     editTarget = null,
-    evoTarget = null;
+    evoTarget = null,
+    evoChoices = [];
   const targetFor = (e) => ({
     list: data.have.includes(e) ? "have" : "want",
     uid: e.uid,
@@ -802,6 +803,10 @@
     const target = (evoTarget = targetFor(e));
     $("vTitle").textContent = "Evoluir " + forms.label(e);
     $("vName").value = "";
+    evoChoices = [];
+    $("vSearchRow").hidden = true;
+    $("vNames").replaceChildren();
+    $("vOk").disabled = true;
     $("vCp").value = "";
     $("vMsg").textContent = "";
     const box = $("vOpts");
@@ -809,13 +814,19 @@
     $("dEvo").showModal();
     const list = forms.evolutionNames(e) ?? ((await getEvos(e.id)) || []);
     if (evoTarget !== target || !$("dEvo").open) return;
+    evoChoices = list;
+    $("vSearchRow").hidden = list.length <= 3;
+    $("vOk").disabled = !list.length;
     box.innerHTML = "";
     if (!list.length) {
       box.innerHTML =
-        '<span class="hint">Nenhuma evolução encontrada. Digite o nome abaixo.</span>';
+        '<span class="hint">Nenhuma evolução disponível. Se houve falha na conexão, feche e tente novamente.</span>';
       return;
     }
     list.forEach((n) => {
+      const option = document.createElement("option");
+      option.value = n;
+      $("vNames").append(option);
       const b = document.createElement("button");
       b.className = "evo";
       b.textContent = forms.resolve(n)?.label || n;
@@ -835,8 +846,11 @@
     );
     if (index < 0) return;
     const p = resolve($("vName").value);
-    if (!p) {
-      $("vMsg").textContent = "Escolha uma evolução ou digite um nome válido.";
+    if (!p || !evoChoices.some((n) => {
+      const allowed = resolve(n);
+      return allowed && allowed.id === p.id && (allowed.form || "normal") === (p.form || (forms.forEntry(data[evoTarget.list][index]) && forms.get(p.id) ? "alola" : "normal"));
+    })) {
+      $("vMsg").textContent = "Escolha uma das evoluções deste Pokémon.";
       return;
     }
     if (!validCP("vCp", "vMsg")) return;
