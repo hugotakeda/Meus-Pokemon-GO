@@ -4,6 +4,17 @@
   const forms = window.PokemonForms;
   const ART =
     "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/";
+  const formId = (e) => forms.forEntry(e)?.spriteId || e.id;
+  const artUrls = (e) => {
+    const id = formId(e),
+      normal = ART + id + ".png";
+    return e.shiny ? [ART + "shiny/" + id + ".png", normal] : [normal];
+  };
+  const searchName = (e) =>
+    (
+      forms.label(e) + (forms.forEntry(e) ? " alolan " + e.name : "")
+    ).toLowerCase();
+  const wantsAlola = (text) => /\balolan?\b/i.test(text.replace(/[_-]/g, " "));
   const FLAGS = {
     hundo: "100%",
     shiny: "Shiny",
@@ -202,12 +213,13 @@
     if (!p) return null;
     return {
       ...p,
-      form: forms.get(p.id) ? $("form").value || p.form || "normal" : "normal",
+      form: forms.get(p.id) ? p.form || $("form").value || "normal" : "normal",
     };
   }
   function syncAddForm() {
     const p = resolve($("name").value);
     $("form").disabled = !p || !forms.get(p.id);
+    $("formRow").hidden = $("form").disabled;
     $("form").value = p?.form || "normal";
   }
 
@@ -219,8 +231,9 @@
     }
     const p = selectedPokemon();
     if (!p) {
-      $("msg").textContent =
-        "Não encontrei esse Pokémon. Use o nome em inglês ou o número da Pokédex.";
+      $("msg").textContent = wantsAlola($("name").value)
+        ? "Não encontrei essa forma de Alola. Confira o nome ou escolha um Pokémon que tenha forma de Alola."
+        : "Não encontrei esse Pokémon. Use o nome em inglês ou o número da Pokédex.";
       return;
     }
     const iv = readIV("iA", "iD", "iS");
@@ -262,11 +275,11 @@
     const img = document.createElement("img");
     img.alt = forms.label(e);
     img.loading = "lazy";
-    const spriteId = forms.forEntry(e)?.spriteId || e.id;
-    const normal = ART + spriteId + ".png";
-    img.src = e.shiny ? ART + "shiny/" + spriteId + ".png" : normal;
+    const urls = artUrls(e);
+    let index = 0;
+    img.src = urls[index];
     img.onerror = () => {
-      if (img.src !== normal) img.src = normal;
+      if (++index < urls.length) img.src = urls[index];
       else img.replaceWith(document.createTextNode("?"));
     };
     return img;
@@ -333,7 +346,7 @@
     const items = data[tab].filter(
       (e) =>
         (!q ||
-          forms.label(e).toLowerCase().includes(q) ||
+          searchName(e).includes(q) ||
           String(e.id) === q.replace("#", "")) &&
         (flt === "all" || e[flt]),
     );
@@ -385,6 +398,12 @@
       const lt = levelText(e);
       c.innerHTML = `<div class="cp">${e.cp ? "CP <b>" + (+e.cp | 0) + "</b>" + (lt ? '<span class="lv">Nível <b>' + lt + "</b></span>" : "") : ""}</div><div class="pic"></div><div class="badges">${on.map((f) => `<span class="b ${f}">${FLAGS[f]}</span>`).join("")}</div><div class="nm"></div><div class="from"></div><div class="iv"></div><div class="nt"></div><div class="acts"></div>`;
       c.querySelector(".pic").append(pic(e));
+      if (forms.forEntry(e)) {
+        const badge = document.createElement("span");
+        badge.className = "b alola";
+        badge.textContent = "Alola";
+        c.querySelector(".badges").append(badge);
+      }
       const nm = c.querySelector(".nm");
       nm.textContent = forms.label(e) + " ";
       const id = document.createElement("span");
@@ -633,6 +652,7 @@
     editTarget = targetFor(e);
     $("eTitle").textContent = "Editar " + forms.label(e);
     $("eForm").disabled = !forms.get(e.id);
+    $("eFormBox").hidden = $("eForm").disabled;
     $("eForm").value = forms.forEntry(e) ? "alola" : "normal";
     const box = $("eFlags");
     box.innerHTML = "";
@@ -738,7 +758,9 @@
       evolvedFrom: forms.label(previous),
       id: p.id,
       name: p.name,
-      form: p.form || "normal",
+      form:
+        p.form ||
+        (forms.forEntry(previous) && forms.get(p.id) ? "alola" : "normal"),
       cp: $("vCp").value,
     };
     evoTarget = null;
@@ -776,7 +798,12 @@
     );
   };
   $("name").addEventListener("input", syncAddForm);
-  $("form").addEventListener("change", upd);
+  $("form").addEventListener("change", () => {
+    const p = resolve($("name").value);
+    if (p?.form === "alola" && $("form").value !== "alola")
+      $("name").value = p.name;
+    upd();
+  });
   ["name", "cp", "iA", "iD", "iS"].forEach((i) =>
     $(i).addEventListener("input", upd),
   );
@@ -924,6 +951,7 @@
   };
   window.Collection = {
     resolveName: resolve,
+    formId,
     getData: () => ({
       have: data.have.map(copyEntry),
       want: data.want.map(copyEntry),

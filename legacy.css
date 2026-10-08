@@ -270,6 +270,9 @@ button.ghost:hover {
 .b.mega {
   background: var(--red);
 }
+.b.alola {
+  background: #c25e0e;
+}
 .nm,
 .cp,
 .from,
@@ -360,8 +363,10 @@ button.ghost:hover {
 .fld.cpf {
   width: 96px;
 }
-.fld input {
+.fld input,
+.fld select {
   width: 100%;
+  max-width: none;
 }
 .fld > label,
 .lab {

@@ -25,6 +25,10 @@ test("regional aliases accept Portuguese, English and source feed names without 
     "Golem (Alolan)",
     "golem-alola",
     "76 Alola",
+    "alola golem",
+    "golem-alola-form",
+    "Alolan-form-Golem",
+    "76 alolan form",
     "Golem da região de Alola",
   ]) {
     assert.equal(forms.resolve(name).id, 76, name);

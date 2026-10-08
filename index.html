@@ -432,14 +432,16 @@
             >
           </div>
         </div>
-        <div class="fr">
+        <div class="fr" id="formRow" hidden>
           <div class="fld grow">
             <label for="form">Forma</label>
-            <select id="form" disabled>
+            <select id="form">
               <option value="normal">Normal</option>
-              <option value="alola">Alola</option>
+              <option value="alola">De Alola</option>
             </select>
           </div>
+        </div>
+        <div class="fr">
           <div class="fld ivf">
             <label for="iA">IV Ataque</label
             ><input
@@ -529,14 +531,14 @@
       <h2 id="eTitle"></h2>
       <span class="lab">Variantes</span>
       <div class="row" id="eFlags"></div>
+      <div class="fld" id="eFormBox" hidden>
+        <label for="eForm">Forma</label>
+        <select id="eForm">
+          <option value="normal">Normal</option>
+          <option value="alola">De Alola</option>
+        </select>
+      </div>
       <div class="fr">
-        <div class="fld grow">
-          <label for="eForm">Forma</label>
-          <select id="eForm">
-            <option value="normal">Normal</option>
-            <option value="alola">Alola</option>
-          </select>
-        </div>
         <div class="fld cpf">
           <label for="eCp">CP</label><input id="eCp" type="number" min="10" />
         </div>

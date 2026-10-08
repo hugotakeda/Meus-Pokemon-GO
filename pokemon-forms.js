@@ -59,17 +59,22 @@
   }
   function resolve(name) {
     const input = key(name);
+    const base = input
+      .replace(/(^| )(?:de )?alolan?(?: form)?(?= |$)/g, " ")
+      .trim();
     return (
-      catalog.find((p) =>
-        [
-          p.pokeapiName.replace("-", " "),
-          "alolan " + p.name,
-          p.name + " alolan",
-          p.name + " de alola",
-          p.name + " da regiao de alola",
-          p.name + " forma de alola",
-          String(p.id) + " alola",
-        ].includes(input),
+      catalog.find(
+        (p) =>
+          (base !== input && [p.name, String(p.id)].includes(base)) ||
+          [
+            p.pokeapiName.replace("-", " "),
+            "alolan " + p.name,
+            p.name + " alolan",
+            p.name + " de alola",
+            p.name + " da regiao de alola",
+            p.name + " forma de alola",
+            String(p.id) + " alola",
+          ].includes(input),
       ) || null
     );
   }
