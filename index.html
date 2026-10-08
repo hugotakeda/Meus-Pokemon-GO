@@ -613,7 +613,7 @@
         ><button id="eSave">Salvar</button>
       </div>
     </dialog>
-    <dialog class="dlg" id="dEvo">
+    <dialog class="dlg evolution-dialog" id="dEvo" aria-labelledby="vTitle">
       <h2 id="vTitle"></h2>
       <p class="hint">Escolha a evolução:</p>
       <div class="row" id="vOpts"></div>
@@ -627,18 +627,18 @@
           autocomplete="off"
         />
       </div>
-      <div class="row">
+      <div class="evolution-cp">
+        <label for="vCp">CP depois de evoluir <span class="hint">(opcional)</span></label>
         <input
           id="vCp"
           type="number"
           min="10"
-          placeholder="CP depois de evoluir"
+          placeholder="Ex.: 1500"
         />
       </div>
       <div
         id="vMsg"
         class="hint"
-        style="color: #b3261e; min-height: 1.2em"
         role="status"
       ></div>
       <div class="end">
