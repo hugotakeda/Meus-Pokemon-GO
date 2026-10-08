@@ -95,6 +95,7 @@
     home: "Visão geral",
     collection: "Minha coleção",
     wishlist: "Quero pegar",
+    pokedex: "Pokédex",
     guide: "Guia de capturas",
     events: "Eventos e novidades",
     trainer: "Meu treinador",

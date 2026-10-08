@@ -509,7 +509,7 @@ test("corrupt saved data is preserved and exported verbatim while all additions 
       false,
     );
     app.evaluate("save()");
-    assert.deepEqual(app.json("data"), { have: [], want: [] });
+    assert.deepEqual(app.json("data"), { have: [], want: [], folders: [] });
     assert.equal(app.store.get("pgo"), raw);
     app.get("exp").click();
     assert.equal(app.downloads.length, 1);
@@ -530,7 +530,7 @@ test("falsy JSON values in saved storage require recovery instead of becoming wr
       raw,
     );
     app.evaluate("save()");
-    assert.deepEqual(app.json("data"), { have: [], want: [] });
+    assert.deepEqual(app.json("data"), { have: [], want: [], folders: [] });
     assert.equal(app.store.get("pgo"), raw);
   }
 });
@@ -1228,4 +1228,60 @@ test("searching finds Alola entries by the word Alola", () => {
   assert.ok(
     !app.evaluate("searchName({ id:26, name: 'raichu' })").includes("alola"),
   );
+});
+
+
+test("folders organize multiple memberships, persist and never delete specimens", async () => {
+  const app = createApp({ have: [{uid: 1, id: 25, name: "pikachu"}], want: [] });
+  app.get("createFolder").click();
+  app.get("folderName").value = "Trocas";
+  app.get("folderSave").click();
+  const first = app.evaluate("folder");
+  app.get("createFolder").click();
+  app.get("folderName").value = "Favoritos";
+  app.get("folderSave").click();
+  app.evaluate("openFolders(data.have[0])");
+  for (const label of app.get("pokemonFolders").children) label.children[0].checked = true;
+  app.get("pokemonFoldersSave").click();
+  assert.equal(app.json("data.have[0].folders").length, 2);
+  app.evaluate("const snap=Collection.getData(); snap.have[0].folders.length=0; snap.folders[0].name='Changed'");
+  assert.equal(app.json("data.have[0].folders").length, 2);
+  assert.equal(app.json("data.folders[0].name"), "Trocas");
+  app.get("exp").click();
+  const backup = JSON.parse(await app.downloads[0].text());
+  const restored = createApp(backup);
+  assert.deepEqual(restored.json("data.folders"), backup.folders);
+  assert.deepEqual(restored.json("data.have[0].folders"), backup.have[0].folders);
+  app.get("renameFolder").click();
+  app.get("folderName").value = "Batalhas";
+  app.get("folderSave").click();
+  app.get("deleteFolder").click();
+  assert.equal(app.evaluate("data.have.length"), 1);
+  assert.deepEqual(app.json("data.have[0].folders"), [first]);
+  assert.equal(app.evaluate("folder"), "");
+});
+
+test("selected folders filter cards and new additions, old backups remain compatible", () => {
+  const app = createApp();
+  assert.deepEqual(app.json("data.folders"), []);
+  app.get("createFolder").click();
+  app.get("folderName").value = "Liga Super";
+  app.get("folderSave").click();
+  app.get("name").value = "25";
+  app.get("addHave").click();
+  assert.deepEqual(app.json("data.have[0].folders"), [app.evaluate("folder")]);
+  app.evaluate("folder=''; render()");
+  app.get("name").value = "26";
+  app.get("addHave").click();
+  app.evaluate("folder=data.folders[0].id; render()");
+  assert.equal(app.get("grid").children.length, 1);
+  app.evaluate("tab='want'; render()");
+  assert.equal(app.get("count").textContent, "0 de 0 Pokémon");
+  app.get("createFolder").click();
+  app.get("folderName").value = "liga super";
+  app.get("folderSave").click();
+  assert.equal(app.evaluate("data.folders.length"), 1);
+  assert.match(app.get("folderMsg").textContent, /único/);
+  const cleaned = app.json("normalizeCollection({have:[{uid:1,id:25,name:'pikachu',folders:['missing']}],want:[]})");
+  assert.deepEqual(cleaned.have[0].folders, []);
 });
