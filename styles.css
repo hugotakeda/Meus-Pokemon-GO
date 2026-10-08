@@ -2200,3 +2200,24 @@ select {
   #dex-status { margin-top: 20px; }
 }
 @media (max-width: 600px) { .dex-hero { grid-template-columns: 1fr; padding: 16px; } .dex-hero img { margin: auto; } .dex-stat { grid-template-columns: 120px 1fr 32px; gap: 6px; } }
+
+/* Keep the evolution dialog compact and its fields readable. */
+#dEvo { width: min(420px, calc(100vw - 32px)); padding: 24px; }
+#dEvo h2 { margin: 0 0 12px; line-height: 1.3; }
+#dEvo > .hint { margin: 0 0 16px; line-height: 1.5; }
+#dEvo #vOpts { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 24px; }
+#dEvo .evo { min-height: 44px; padding: 10px 18px; line-height: 1.3; }
+#dEvo .evo.on { background: var(--green); border-color: var(--green); color: #fff; }
+#dEvo #vSearchRow { margin-bottom: 20px; }
+#dEvo #vSearchRow[hidden] { display: none; }
+#dEvo .evolution-cp { display: grid; gap: 8px; }
+#dEvo .evolution-cp label { font-size: 13px; line-height: 1.5; }
+#dEvo #vCp { width: 100%; min-height: 44px; font-size: 14px; }
+#dEvo #vMsg { color: #b3261e; line-height: 1.5; margin: 12px 0 0; }
+#dEvo #vMsg:empty { display: none; }
+#dEvo .end { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); gap: 12px; }
+#dEvo .end button { min-height: 44px; padding: 10px 20px; font-size: 14px; }
+@media (max-width: 480px) {
+  #dEvo { padding: 20px; }
+  #dEvo .end button { flex: 1; }
+}
