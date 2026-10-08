@@ -617,11 +617,13 @@
       <h2 id="vTitle"></h2>
       <p class="hint">Escolha a evolução:</p>
       <div class="row" id="vOpts"></div>
-      <div class="row">
+      <datalist id="vNames"></datalist>
+      <div class="row" id="vSearchRow" hidden>
         <input
           id="vName"
-          list="names"
-          placeholder="Ou digite outro nome / número"
+          list="vNames"
+          aria-label="Buscar entre as evoluções deste Pokémon"
+          placeholder="Buscar uma das evoluções"
           autocomplete="off"
         />
       </div>
