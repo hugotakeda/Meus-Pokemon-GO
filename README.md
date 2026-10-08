@@ -36,6 +36,8 @@ Cada exemplar tem seu próprio registro: dois Golem podem ter formas, CP, IVs e 
 
 ### 🎒 Coleção e lista de desejos
 
+- **Pastas personalizadas:** Geral reúne todos os Pokémon. Crie, renomeie e exclua categorias, e use o botão Pastas de cada Pokémon para colocá-lo em uma ou mais delas. Novos registros entram automaticamente na pasta aberta. Excluir uma pasta preserva os Pokémon. As pastas também são incluídas no backup.
+
 > Registre cada captura e dê um destino ao próximo Pokémon que você quer encontrar.
 
 - Adição pelo nome em inglês, pelas sugestões ou pelo número da Pokédex, de **1 a 1025**.
@@ -43,6 +45,10 @@ Cada exemplar tem seu próprio registro: dois Golem podem ter formas, CP, IVs e 
 - CP, IVs de ataque/defesa/PS, notas individuais e tags **100%, Shiny, Sombroso, Purificado, Sortudo e Mega**.
 - Edição e evolução preservando as informações do exemplar; remoção com opção de desfazer.
 - Busca por nome, número ou Alola, filtros por tag e ordenação por adição, CP, IV, nome ou Pokédex.
+
+### 📖 Pokédex
+
+Busca por nome ou número, arte normal/Shiny, formas cadastradas no Game Master de GO, evoluções com doces, ataque, defesa, resistência, CP máximo nos níveis 40 e 50 e fraquezas de Pokémon GO. Dados locais de PokeMiners (atualizados em 08/10/2026); PokéAPI fornece ilustrações. Cadastro no Game Master não confirma lançamento ou disponibilidade atual.
 
 ### 🌴 Formas de Alola e nível estimado
 

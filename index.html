@@ -37,6 +37,7 @@
           ><i data-icon="heart"></i>Quero pegar</a
         >
         <span class="nav-label">EXPLORE O JOGO</span>
+        <a href="#pokedex" data-nav="pokedex"><i data-icon="search"></i>Pokédex</a>
         <a href="#guide" data-nav="guide"
           ><i data-icon="compass"></i>Guia de capturas</a
         >
@@ -209,6 +210,15 @@
               <i data-icon="plus"></i> Adicionar Pokémon
             </button>
           </div>
+          <div class="folder-panel">
+            <p class="hint">Organize por categoria. Um Pokémon pode estar em várias pastas.</p>
+            <div id="folders" class="folder-list" role="group" aria-label="Pastas da coleção"></div>
+            <div class="folder-actions">
+              <button class="ghost" id="createFolder">+ Criar pasta</button>
+              <button class="ghost" id="renameFolder">Renomear pasta</button>
+              <button class="ghost" id="deleteFolder">Excluir pasta</button>
+            </div>
+          </div>
           <div class="collection-toolbar">
             <div class="bar">
               <button class="tab on" data-t="have"></button
@@ -247,6 +257,17 @@
               hidden
             /><span class="hint">Leve sua coleção para outro dispositivo.</span>
           </div>
+        </section>
+        <section id="pokedex-view" class="view" hidden>
+          <div class="page-heading"><div><p class="eyebrow">CONHEÇA CADA POKÉMON</p><h1>Pokédex</h1><p>Explore evoluções, formas, tipos e estatísticas de Pokémon GO.</p></div></div>
+          <form id="dex-search" class="search-tools">
+            <label for="dex-query">Nome ou número</label>
+            <input id="dex-query" list="names" placeholder="Ex.: Elgyem ou 605" required />
+            <button class="primary" type="submit">Buscar Pokémon</button>
+          </form>
+          <p id="dex-status" role="status">Busque um Pokémon para ver sua ficha.</p>
+          <div id="dex-result"></div>
+          <p class="hint dex-credits">Dados de GO: <a href="https://github.com/PokeMiners/game_masters" target="_blank" rel="noopener">PokeMiners</a>. Ilustrações: <a href="https://pokeapi.co/" target="_blank" rel="noopener">PokéAPI</a>.</p>
         </section>
         <section id="guide-view" class="view" hidden>
           <div class="page-heading">
@@ -516,6 +537,19 @@
       </div>
       <datalist id="names"></datalist>
     </dialog>
+    <dialog class="dlg" id="dFolder" aria-labelledby="folderTitle">
+      <h2 id="folderTitle">Criar pasta</h2>
+      <label for="folderName">Nome da pasta</label>
+      <input id="folderName" maxlength="60" placeholder="Ex.: Liga Super, Trocas, Favoritos" />
+      <p id="folderMsg" role="alert"></p>
+      <div class="row"><button class="primary" id="folderSave">Salvar</button><button class="ghost" id="folderCancel">Cancelar</button></div>
+    </dialog>
+    <dialog class="dlg" id="dPokemonFolders" aria-labelledby="pokemonFoldersTitle">
+      <h2 id="pokemonFoldersTitle">Pastas do Pokémon</h2>
+      <p class="hint" id="pokemonFoldersHint"></p>
+      <div id="pokemonFolders" class="folder-choices"></div>
+      <div class="row"><button class="primary" id="pokemonFoldersSave">Salvar</button><button class="ghost" id="pokemonFoldersCancel">Cancelar</button></div>
+    </dialog>
     <dialog class="dlg" id="dFil">
       <h2>Filtrar e ordenar</h2>
       <p class="hint">Ordenar por</p>
@@ -621,6 +655,7 @@
     <script src="brazil-event-scope.js"></script>
     <script src="calendar-rules.js"></script>
     <script src="event-calendar.js"></script>
+    <script src="pokedex.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

@@ -24,14 +24,15 @@
     mega: "Mega",
   };
   let dex = {},
-    data = { have: [], want: [] },
+    data = { have: [], want: [], folders: [] },
+    folder = "",
     tab = "have",
     flt = "all",
     sortKey = "add",
     recoveryRequired = false,
     storageWarning = false;
   let uidSequence = 0;
-  const copyEntry = (e) => ({ ...e, iv: e.iv ? e.iv.slice() : null });
+  const copyEntry = (e) => ({ ...e, iv: e.iv ? e.iv.slice() : null, folders: [...(e.folders || [])] });
   function newUid(
     used = new Set([...data.have, ...data.want].map((e) => String(e.uid))),
   ) {
@@ -46,6 +47,16 @@
   function normalizeCollection(value) {
     if (!value || !Array.isArray(value.have) || !Array.isArray(value.want))
       throw new Error("O backup deve conter as listas Tenho e Quero pegar.");
+    const folders = [];
+    if (value.folders != null && !Array.isArray(value.folders))
+      throw new Error("As pastas do backup são inválidas.");
+    for (const f of value.folders || []) {
+      if (!f || typeof f.id !== "string" || !f.id.trim() ||
+          typeof f.name !== "string" || !f.name.trim() ||
+          folders.some((x) => x.id === f.id))
+        throw new Error("O backup contém uma pasta inválida.");
+      folders.push({ id: f.id, name: f.name.trim().slice(0, 60) });
+    }
     const seen = new Set();
     const clean = (list) =>
       list.map((e) => {
@@ -86,6 +97,7 @@
         seen.add(String(uid));
         const entry = {
           uid,
+          folders: [...new Set((Array.isArray(e.folders) ? e.folders : []).filter((id) => folders.some((f) => f.id === id)))],
           id: regional?.id || e.id,
           name: regional?.name || e.name.trim().slice(0, 140),
           form: regional ? "alola" : "normal",
@@ -100,7 +112,7 @@
           entry.evolvedFrom = e.evolvedFrom.slice(0, 140);
         return entry;
       });
-    return { have: clean(value.have), want: clean(value.want) };
+    return { have: clean(value.have), want: clean(value.want), folders };
   }
   try {
     const raw = localStorage.getItem("pgo");
@@ -246,6 +258,7 @@
     $("msg").textContent = "";
     const e = {
       uid: newUid(),
+      folders: folder ? [folder] : [],
       id: p.id,
       name: p.name,
       form: p.form,
@@ -324,7 +337,72 @@
     );
   }
 
+  function drawFolders() {
+    if (!data.folders.some((f) => f.id === folder)) folder = "";
+    $("folders").replaceChildren();
+    [{ id: "", name: "Geral" }, ...data.folders].forEach((f) => {
+      const b = document.createElement("button");
+      b.className = "ghost";
+      b.textContent = "📁 " + f.name + " (" + data[tab].filter((e) => !f.id || (e.folders || []).includes(f.id)).length + ")";
+      b.setAttribute("aria-pressed", String(folder === f.id));
+      b.onclick = () => { folder = f.id; render(); };
+      $("folders").append(b);
+    });
+    $("renameFolder").disabled = $("deleteFolder").disabled = !folder || recoveryRequired;
+    $("createFolder").disabled = recoveryRequired;
+  }
+  function openFolderName(rename = false) {
+    $("folderTitle").textContent = rename ? "Renomear pasta" : "Criar pasta";
+    $("folderName").value = rename ? data.folders.find((f) => f.id === folder).name : "";
+    $("folderMsg").textContent = "";
+    $("folderSave").onclick = () => {
+      if (recoveryRequired) return;
+      const name = $("folderName").value.trim().slice(0, 60);
+      if (!name || name.toLocaleLowerCase() === "geral" || data.folders.some((f) =>
+          (!rename || f.id !== folder) && f.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+        $("folderMsg").textContent = "Escolha um nome único para a pasta, diferente de Geral.";
+        return;
+      }
+      if (rename) data.folders.find((f) => f.id === folder).name = name;
+      else { folder = newUid(new Set(data.folders.map((f) => f.id))); data.folders.push({ id: folder, name }); }
+      save(); render(); $("dFolder").close();
+    };
+    $("dFolder").showModal();
+    $("folderName").focus();
+  }
+  $("createFolder").onclick = () => openFolderName();
+  $("renameFolder").onclick = () => { if (folder) openFolderName(true); };
+  $("folderCancel").onclick = () => $("dFolder").close();
+  $("deleteFolder").onclick = () => {
+    if (!folder || recoveryRequired || !confirm("Excluir esta pasta? Os Pokémon continuarão em Geral e nas outras pastas.")) return;
+    data.folders = data.folders.filter((f) => f.id !== folder);
+    [...data.have, ...data.want].forEach((e) => { e.folders = (e.folders || []).filter((id) => id !== folder); });
+    folder = ""; save(); render();
+  };
+  function openFolders(e) {
+    const target = targetFor(e);
+    $("pokemonFoldersTitle").textContent = "Pastas de " + forms.label(e);
+    $("pokemonFolders").replaceChildren();
+    const choices = data.folders.map((f) => {
+      const label = document.createElement("label"), input = document.createElement("input");
+      input.type = "checkbox"; input.checked = (e.folders || []).includes(f.id);
+      label.append(input, document.createTextNode(" " + f.name));
+      $("pokemonFolders").append(label);
+      return { id: f.id, input };
+    });
+    $("pokemonFoldersHint").textContent = choices.length ? "Escolha uma ou mais pastas. Este Pokémon sempre aparece em Geral." : "Crie uma pasta na coleção para começar a organizar seus Pokémon.";
+    $("pokemonFoldersSave").onclick = () => {
+      if (recoveryRequired) return;
+      const current = data[target.list].find((x) => x.uid === target.uid);
+      if (current) { current.folders = choices.filter((c) => c.input.checked && data.folders.some((f) => f.id === c.id)).map((c) => c.id); save(); render(); }
+      $("dPokemonFolders").close();
+    };
+    $("dPokemonFolders").showModal();
+  }
+  $("pokemonFoldersCancel").onclick = () => $("dPokemonFolders").close();
+
   function render() {
+    drawFolders();
     document.querySelectorAll("[data-filter]").forEach((b) => {
       b.classList.toggle("selected", b.dataset.filter === flt);
       b.setAttribute("aria-pressed", String(b.dataset.filter === flt));
@@ -348,7 +426,8 @@
         (!q ||
           searchName(e).includes(q) ||
           String(e.id) === q.replace("#", "")) &&
-        (flt === "all" || e[flt]),
+        (flt === "all" || e[flt]) &&
+        (!folder || (e.folders || []).includes(folder)),
     );
     const so = sortKey,
       big = 1e9;
@@ -383,6 +462,7 @@
         "</button></div>";
       g.querySelector("button").onclick = () => {
         if (data[tab].length) {
+          folder = "";
           flt = "all";
           sortKey = "add";
           $("q").value = "";
@@ -443,6 +523,14 @@
         if ((ev && ev.length) || (!ev && evoFail.has(e.id)))
           mk("Evoluir", () => openEvo(e));
       }
+      mk("Pastas", () => openFolders(e));
+      (e.folders || []).forEach((id) => {
+        const f = data.folders.find((f) => f.id === id);
+        if (!f) return;
+        const badge = document.createElement("span");
+        badge.className = "b folder-badge"; badge.textContent = f.name;
+        c.querySelector(".badges").append(badge);
+      });
       mk("Editar", () => openEdit(e));
       const d = document.createElement("button");
       d.className = "ghost";
@@ -929,6 +1017,7 @@
       }
       recoveryRequired = false;
       data = j;
+      folder = "";
       fixHundo();
       save();
       render();
@@ -955,6 +1044,7 @@
     getData: () => ({
       have: data.have.map(copyEntry),
       want: data.want.map(copyEntry),
+      folders: data.folders.map((f) => ({ ...f })),
     }),
     getStorageStatus: () => ({
       blocked: recoveryRequired,
